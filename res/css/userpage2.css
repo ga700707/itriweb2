@@ -1,0 +1,67 @@
+.backgorund-default:focus,
+.backgorund-default:hover {
+    transition: all 0.4s ease-in-out;
+    cursor: default;
+    box-shadow: 0 0 16px #F5F5F5;
+}
+.searchFrame{
+	width:2px;
+	height:360px;
+	background-color: beige
+}
+
+
+.createBtn{
+    font-style: color;
+	width:140px;
+	height:40px;
+	background-color: rgb(0, 0, 0)
+}
+.CreateFont{
+    font-family:DFKai-sb;
+    color:#888888;
+  }
+.Block{
+    margin:0px 2%;
+    width:15%;
+}
+.mainframe .row div{
+    margin-left: 2%;
+    margin-right: 2%;
+} 
+.mainframe .row .odd td{
+    position: relative;
+    left:7%;
+}
+.mainframe .row .even td{
+    position: relative;
+    left:7%;
+}
+@media screen and (max-width:1400px){
+    .mainframe .row div{
+        margin-left: 8%;
+        margin-right: 8%;
+    }
+    .mainframe .row .odd td{
+        position: relative;
+        left:12%;
+    }
+    .mainframe .row .even td{
+        position: relative;
+        left:12%;
+    }
+}
+@media screen and (max-width:900px){
+    .mainframe .row div{
+        margin-left: 25%;
+        margin-right: 25%;
+    }
+    .mainframe .row .odd td{
+        position: relative;
+        left:27%;
+    }
+    .mainframe .row .even td{
+        position: relative;
+        left:27%;
+    }
+}

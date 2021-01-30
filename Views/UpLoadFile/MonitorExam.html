@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>合作廠商管理系統</title>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+
+    <!--socket -->
+    <script src="/res/js/SocketIO.js"></script>
+
+    <!--chat -->
+    <link rel="stylesheet" href="/res/kendo/kendo.common.min.css" />
+    <link rel="stylesheet" href="/res/kendo/kendo.default.min.css" />
+    <link rel="stylesheet" href="/res/kendo/kendo.default.mobile.min.css" />
+
+    <!--InitModal-->
+    <script src="/res/js/InitModal.js" type="text/javascript"></script>
+
+    <style>
+        .table {
+            background-color: transparent;
+            table-layout: fixed;
+        }
+
+        .dataTables_info {
+            font-size: 1em;
+        }
+
+        .paginate_button {
+            font-size: 1em;
+
+        }
+
+        .word {
+            font-size: 1em;
+        }
+    </style>
+    <script src="/res/kendo/kendo.all.min.js"></script>
+    <script>
+        var dataTables;
+        var DataExample = null;
+        var DataExampleContent = null;
+        var Example = [];
+        var i = 0;
+        var page = 0;
+        var examId = 0;
+        var hideExamplearray = [];
+        var hideExamarray = [];
+        var level = 0;
+        var category = 0;
+
+        $(document).ready(function () {
+
+            $.each(LevelData, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtlevel").append('<option value=' + key + '>' + value + '</option>');
+            });
+            ChangeCategory();
+            dataTables = $('#ExamTable').DataTable({
+
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/exam/GetAllMonitor",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Level = $("#txtlevel").val();
+                        d.Category = $("#txtcategory").val();
+                        d.AccountId = getCookie("id");
+                        d.GroupId = getCookie("GroupId");
+                        return JSON.stringify(d)
+                    }
+                },
+                "rowCallback": function (row, data) {
+                    //InitModal(level,category);
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'states' },
+                    { 'data': 'groupId' },
+                    { 'data': 'level' },
+                    { 'data': 'category' },//5
+                    { 'data': 'reference' },
+                    { 'data': 'volume' },
+                    { 'data': 'class' },
+                    { 'data': 'theme' },
+                    { 'data': 'result' },
+                    { 'data': null },
+
+                ], "columnDefs": [{
+                    "targets": [0, 2], // hidden column
+                    "visible": false
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        return LevelData[row.level];
+                    }
+                }, {
+                    "targets": 4,
+                    "render": function (data, type, row) {
+                        if (row.level <= 1)
+                            return CategoryA[row.category];
+                        else
+                            return CategoryBC[row.category];
+                    }
+                }, {
+                    "targets": 5,
+                    "render": function (data, type, row) {
+                        return TextBookData[row.reference];
+                    }
+
+                }, {
+                    "targets": 1,
+                    "render": function (data, type, row) {
+                        var checked = (row.result == null) ? "待審查" : "返回";
+                        var result = (row.result == null) ? checked : "<a href='javascript:void(0);' onclick='changeStatus(" + row.id + ");'>" + checked + "</a>";
+
+                        return result;
+                    }
+
+                }, {
+                    "targets": 8,
+                    "render": function (data, type, row) {
+                        return ThemeData[row.theme];
+                    }
+
+                }, {
+                    "targets": 9,
+                    "render": function (data, type, row) {
+                        console.log(row.states);
+                        var result = "";
+                        if (row.result == null) {
+                            result = "待審查";
+                        } else result = (row.result == 0) ? "未通過" : "通過";
+                        return result;
+                    }
+                }, {
+                    "targets": 10, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        var html = "";
+                        html += '<a href="javascript:void(0);" onclick="DetailExampleContent(' + row.id + ',' + row.level + ',' + row.category + ')">詳細</a> '
+                        return html
+                    }
+                }],
+                "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+                "language": { // change display text
+                    "info": " 目前顯示 _START_ 至 _END_ 筆，共計 _TOTAL_ 筆。",
+                    "paginate": {
+                        "first": "第一頁",
+                        "last": "最後一頁",
+                        "next": ">",
+                        "previous": "<"
+                    }
+                }
+
+            });
+
+        });
+
+
+        function ChangeCategory() {
+            //$("#Level").empty();
+            $("#txtcategory").empty();
+            // $("#Reference").empty();
+
+            switch (parseInt($("#txtlevel").val())) {
+                case 0:
+                case 1:
+                    $.each(CategoryA, function (key, value) { // generate dropdown list from memberData.js 
+                        $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+                    });
+                    break;
+                case 2:
+                case 3:
+                    $.each(CategoryB, function (key, value) { // generate dropdown list from memberData.js 
+                        $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+                    });
+                    break;
+                case 4:
+                case 5:
+                    $.each(CategoryC, function (key, value) { // generate dropdown list from memberData.js 
+                        $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+                    });
+
+                    break;
+            }
+
+
+
+        }
+
+        function changeStatus(Id, msg) {
+            var confirmStatus = confirm("是否更改為待審查?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/exam/ChangeStatus",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "Id": Id
+                    }),
+                    success: function () {
+                        dataTables.draw();
+                    }
+                });
+            }
+        }
+        function DetailExampleContent(id, level, category) {
+            examId = id
+            InitModal(level, category);
+            $('#DetailExample').DataTable({
+                "lengthMenu": [[1, 2, 3], [1, 2, 3]],
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "lengthChange": false,
+                "paging": false,
+
+                "destroy": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/exam/GetExamDetail",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Id = examId
+                        return JSON.stringify(d)
+                    },
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'level' },
+                    { 'data': 'category' },
+                    { 'data': 'reference' },
+                    { 'data': 'volume' },
+                    { 'data': 'class' },   //5
+                    { 'data': 'theme' },
+                    { 'data': 'txtExampleGroup' },
+                    { 'data': 'picExampleGroup' },
+                    { 'data': 'voiceExampleGroup' },
+                    { 'data': 'picExampleGroupMark' },
+                    { 'data': 'voiceExampleGroupMark' },
+
+                ], "columnDefs": [{
+                    "targets": hideExamarray, // hidden column
+                    "visible": false
+                }, {
+                    "targets": 1,
+                    "render": function (data, type, row) {
+
+
+                        return LevelData[row.level];
+                    }
+                }, {
+                    "targets": 2,
+                    "render": function (data, type, row) {
+                        switch (row.level) {
+                            case 0:
+                            case 1:
+                                return CategoryA[row.category];
+                                break;
+                            case 2:
+                            case 3:
+                                return CategoryB[row.category];
+                                break;
+                            case 4:
+                            case 5:
+                                return CategoryC[row.category];
+                        }
+                    }
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        return TextBookData[row.reference];
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        return ThemeData[row.theme];
+                    }
+                }, {
+                    "targets": 8,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExampleGroup != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExampleGroup + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleGroupMark != null)
+                            html += '<a>備註 :' + row.picExampleGroupMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        html += '</div>'
+                        return html
+                    }
+                }],
+            });
+            $('#DetailExampleContent').DataTable({
+                "searching": false,
+                "ordering": false,
+                "lengthChange": false,
+                "DeferRender": true,
+                "paging": false,
+                "destroy": true,
+                "info": false,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/exam/GetExampleContent",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.examId = examId;
+                        return JSON.stringify(d)
+                    },
+                },
+
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'examId' },
+                    { 'data': 'txtExample' },
+                    { 'data': 'picExample' },
+                    { 'data': 'voiceExample' },
+                    { 'data': 'txtA' },    //5
+                    { 'data': 'picA' },
+                    { 'data': 'voiceA' },
+                    { 'data': 'txtB' },
+                    { 'data': 'picB' },
+                    { 'data': 'voiceB' },//10
+                    { 'data': 'txtC' },
+                    { 'data': 'picC' },
+                    { 'data': 'voiceC' },
+                    { 'data': 'txtD' },
+                    { 'data': 'txtE' },//15
+                    { 'data': 'txtF' },
+                    { 'data': 'answer' },
+                    { 'data': 'picExampleMark' },
+                    { 'data': 'voiceExampleMark' },
+                    { 'data': 'picAmark' },
+                    { 'data': 'voiceAmark' },
+                    { 'data': 'picBmark' },
+                    { 'data': 'voiceBmark' },
+                    { 'data': 'picCmark' },
+                    { 'data': 'voiceCmark' },
+                ], "columnDefs": [{
+                    "targets": hideExamplearray.concat([18, 19, 20, 21, 22, 23, 24, 25]), // hidden column
+                    "visible": false
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExample != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExample + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleMark != null)
+                            html += '<a>備註 :' + row.picExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 4,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceExample != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceExample + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceExampleMark != null)
+                            html += '<a>備註 :' + row.voiceExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picA != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picA + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picAmark != null)
+                            html += '<a>備註 :' + row.picAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 7,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceA != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceA + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceAmark != null)
+                            html += '<a>備註 :' + row.voiceAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 9,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picB != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picB + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picBmark != null)
+                            html += '<a>備註 :' + row.picBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 10,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceB != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceB + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceBmark != null)
+                            html += '<a>備註 :' + row.voiceBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 12,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picC != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picC + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picCmark != null)
+                            html += '<a>備註 :' + row.picCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 13,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceC != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceC + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceCmark != null)
+                            html += '<a>備註 :' + row.voiceCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 17,
+                    "render": function (data, type, row) {
+                        return AnswerChoice[row.answer];
+                    }
+                }],
+            });
+
+            $('#modalRecord').modal('show');
+            GetCommentLog("chat1");
+        }
+
+        function GetExample() {
+            level = parseInt($("#txtlevel").val());
+            category = parseInt($("#txtcategory").val());
+            console.log(level, category)
+            InitModal(level, category);
+            DataExample = null;
+            DataExample = $('#Example').DataTable({
+                "lengthMenu": [[1, 2, 3], [1, 2, 3]],
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "lengthChange": false,
+                "destroy": true,
+
+
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+
+                    url: parent.webApiUrl + "/exam/GetExample",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Level = $("#txtlevel").val();
+                        d.Category = $("#txtcategory").val();
+                        d.GroupId = getCookie("GroupId");
+                        return JSON.stringify(d)
+                    },
+                    "dataSrc": function (json) {
+                        //Make your callback here.
+
+                        if (json.recordsTotal == 0)
+                            alert("目前無需審查資料")
+                        return json.data;
+                    }
+                },
+                "rowCallback": function (row, data) {
+
+                    page = DataExample.page.info().page;
+                    $('#Example_paginate').remove();
+                    examId = data.id;
+                    GetExampleContent();
+                    $('#MonitorExample').modal('show');
+                },
+
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'level' },
+                    { 'data': 'category' },
+                    { 'data': 'reference' },
+                    { 'data': 'volume' },
+                    { 'data': 'class' },   //5
+                    { 'data': 'theme' },
+                    { 'data': 'txtExampleGroup' },
+                    { 'data': 'picExampleGroup' },
+                    { 'data': 'voiceExampleGroup' },
+                    { 'data': 'picExampleGroupMark' },
+                    { 'data': 'voiceExampleGroupMark' },
+
+                ], "columnDefs": [{
+                    "targets": hideExamarray, // hidden column
+                    "visible": false
+                }, {
+                    "targets": 1,
+                    "render": function (data, type, row) {
+
+
+                        return LevelData[row.level];
+                    }
+                }, {
+                    "targets": 2,
+                    "render": function (data, type, row) {
+                        switch (row.level) {
+                            case 0:
+                            case 1:
+                                return CategoryA[row.category];
+                                break;
+                            case 2:
+                            case 3:
+                                return CategoryB[row.category];
+                                break;
+                            case 4:
+                            case 5:
+                                return CategoryC[row.category];
+                        }
+                    }
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        return TextBookData[row.reference];
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        return ThemeData[row.theme];
+                    }
+                }, {
+                    "targets": 8,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExampleGroup != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExampleGroup + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleGroupMark != null)
+                            html += '<a>備註 :' + row.picExampleGroupMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        html += '</div>'
+                        return html
+                    }
+                }],
+
+            });
+
+        }
+        function GetExampleContent() {
+            $('#ExampleContent').DataTable({
+                "searching": false,
+                "ordering": false,
+                "lengthChange": false,
+                "DeferRender": true,
+                "paging": false,
+                "destroy": true,
+                "info": false,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/exam/GetExampleContent",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.examId = examId;
+                        return JSON.stringify(d)
+                    },
+                },
+                "rowCallback": function (row, data) {
+                    console.log(DataExample.page.info().page);
+                    if (DataExample.page.info().page == DataExample.page.info().pages - 1) {
+                        $('#nextbtn').hide();
+                        $('#finishbtn').show();
+                    }
+                    else {
+                        $('#nextbtn').show();
+                        $('#finishbtn').hide();
+                    }
+                    if (DataExample.page.info().page == 0)
+                        $('#lastbtn').hide();
+                    else $('#lastbtn').show();
+                    dataTables.draw();
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'examId' },
+                    { 'data': 'txtExample' },
+                    { 'data': 'picExample' },
+                    { 'data': 'voiceExample' },
+                    { 'data': 'txtA' },    //5
+                    { 'data': 'picA' },
+                    { 'data': 'voiceA' },
+                    { 'data': 'txtB' },
+                    { 'data': 'picB' },
+                    { 'data': 'voiceB' },//10
+                    { 'data': 'txtC' },
+                    { 'data': 'picC' },
+                    { 'data': 'voiceC' },
+                    { 'data': 'txtD' },
+                    { 'data': 'txtE' },//15
+                    { 'data': 'txtF' },
+                    { 'data': 'answer' },
+                    { 'data': 'picExampleMark' },
+                    { 'data': 'voiceExampleMark' },
+                    { 'data': 'picAmark' },
+                    { 'data': 'voiceAmark' },
+                    { 'data': 'picBmark' },
+                    { 'data': 'voiceBmark' },
+                    { 'data': 'picCmark' },
+                    { 'data': 'voiceCmark' },
+                ], "columnDefs": [{
+                    "targets": hideExamplearray.concat([18, 19, 20, 21, 22, 23, 24, 25]), // hidden column
+                    "visible": false
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExample != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExample + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleMark != null)
+                            html += '<a>備註 :' + row.picExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 4,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceExample != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceExample + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceExampleMark != null)
+                            html += '<a>備註 :' + row.voiceExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picA != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picA + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picAmark != null)
+                            html += '<a>備註 :' + row.picAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 7,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceA != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceA + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceAmark != null)
+                            html += '<a>備註 :' + row.voiceAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 9,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picB != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picB + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picBmark != null)
+                            html += '<a>備註 :' + row.picBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 10,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceB != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceB + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceBmark != null)
+                            html += '<a>備註 :' + row.voiceBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 12,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picC != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picC + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picCmark != null)
+                            html += '<a>備註 :' + row.picCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 13,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceC != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceC + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceCmark != null)
+                            html += '<a>備註 :' + row.voiceCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }],
+            });
+            GetCommentLog("chat2");
+        }
+
+        function FinishExample() {
+            $('#MonitorExample').modal('hide');
+            dataTables.draw();
+        }
+        function NextExample() {
+
+            page += 1;
+            DataExample.page(page).draw('page')
+            //DataExample.draw(3);
+            // GetExampleContent();
+            //dataTables.draw();
+            //DataExample.on('draw.dt', function (e, settings, data) { 
+            //   console.log(settings);
+            //GetExampleContent(settings.json.data[0].id);
+            //}); 
+
+            //dataTables.draw();
+        }
+        function LastExample() {
+            page -= 1;
+            //DataExampleContent.destroy();
+            //console.log(DataExample.page.info().pages - 1)
+            DataExample.page(page).draw('page');
+        }
+        function PassExample(Result) {
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/exam/UpdatePassExample",
+                contentType: "application/json;charset=utf-8",
+                data: JSON.stringify({
+                    'Id': examId,
+                    'Result': Result,
+                }),
+                success: function (e) {
+                    if (DataExample.page.info().page == DataExample.page.info().pages - 1) {
+                        $('#MonitorExample').modal('hide');
+                    }
+                    else {
+                        page += 1;
+                        DataExample.page(page).draw('page');
+                    }
+                    dataTables.draw();
+                }
+            });
+
+        }
+
+        function PassExampleDetail(Result) {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/exam/UpdatePassExample",
+                contentType: "application/json;charset=utf-8",
+                data: JSON.stringify({
+                    'Id': examId,
+                    'Result': Result,
+                }),
+
+                success: function (e) {
+                    $('#modalRecord').modal('hide');
+                    dataTables.draw();
+                }
+            });
+
+        }
+
+
+
+        function getObjectURL(file) {
+            var url = null;
+            if (window.createObjectURL != undefined) { // basic  
+                url = window.createObjectURL(file);
+            } else if (window.URL != undefined) { // mozilla(firefox)  
+                url = window.URL.createObjectURL(file);
+            } else if (window.webkitURL != undefined) { // webkit or chrome  
+                url = window.webkitURL.createObjectURL(file);
+            }
+            return url;
+        }
+        function createAccountCommit() { // 建立初始化
+
+            $('#modalCreateExamContent').modal('show');
+        }
+        function createExam() { // 建立初始化
+            //$('#modalCreate').modal('hide');
+            $('#modalCreateExamContent').modal('hide');
+            $('#modalCreate').modal('hide');
+
+        }
+        function GetCommentLog(c) {
+
+            document.getElementById(c).getElementsByClassName('k-message-list k-avatars')[0].innerHTML = "";
+
+            $.ajax({
+                type: "post",
+                url: webApiUrl + "/comment/GetCommentLog/",
+                dataType: 'JSON',
+                contentType: 'application/json;charset=utf-8',
+                headers: {
+                    'Authorization': getCookie("token")
+                },
+                data: JSON.stringify({
+                    'ExamId': examId,
+                }),
+                success: function (result) {
+                    console.log(result);
+                    var chat = $("#" + c).data("kendoChat");
+
+                    for (i = 0; i < result.length; i++) {
+                        if (result[i].senderType == 1)
+                            chat.postMessage(result[i].text);
+                        else {
+
+
+                            chat.renderMessage({
+                                type: "text",
+                                text: result[i].text
+                            }, {
+                                    id: kendo.guid(),
+                                    name: '',
+                                });
+                        }
+                    }
+
+                },
+                error: function (result) {
+                    //options.error(result);
+                }
+            });
+        }
+
+    </script>
+</head>
+
+<body>
+
+    <h2>審查考題 </h2>
+
+    <div class="form-group word">
+        <label for="txtlevel">命題級數</label>
+        <select onChange="ChangeCategory()" style="width:5%;" id="txtlevel">
+        </select>
+    </div>
+    <div class="form-group word">
+        <label for="txtcategory">題目類型</label>
+        <select style="width:15%;" id="txtcategory">
+        </select>
+
+
+        <button type="button" class="btn btn-outline-primary my-2 my-sm-0" onclick="dataTables.draw();">送出</button>
+        <button style="display:none;" type="button" class=" btn btn-primary btn-sm"
+            onclick="fnExcelReport();">excel</button>
+    </div>
+
+    <button class="float-left btn btn-outline-info my-2 my-sm-0" onclick="GetExample()">開始審題</button>
+
+
+    <!-- DataTables -->
+
+    <table id="ExamTable" class="word table table-striped table-sm" style="width:100%;">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>狀態</th>
+                <th>groupId</th>
+                <th>命題級數</th>
+                <th>題目類別</th>
+                <th>來源教材</th>
+                <th>冊數</th>
+                <th>課數</th>
+                <th>領域主題</th>
+                <th>結果</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+
+    <!-- Detail -->
+    <div class="modal fade" id="modalRecord" tabindex="-1" role="dialog" aria-labelledby="modalRecordLabel"
+        aria-hidden="true" style="font-size:0.8em;">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRecordLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table id="DetailExampleContent" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>examId</th>
+                                <th>題目內容</th>
+                                <th>題目圖檔</th>
+                                <th>題目音檔</th>
+                                <th>A文字</th>
+                                <th>A圖檔</th>
+                                <th>A音檔</th>
+                                <th>B文字</th>
+                                <th>B圖檔</th>
+                                <th>B音檔</th>
+                                <th>C文字</th>
+                                <th>C圖檔</th>
+                                <th>C音檔</th>
+                                <th>D文字</th>
+                                <th>E文字</th>
+                                <th>F文字</th>
+                                <th>answer</th>
+                                <th>picexamplemark</th>
+                                <th>voiceexamplemark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picCmark</th>
+                                <th>voiceCmark</th>
+                            </tr>
+
+                        </thead>
+                    </table>
+                    <table id="DetailExample" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>命題級數</th>
+                                <th>題目類別</th>
+                                <th>來源教材</th>
+                                <th>冊數</th>
+                                <th>課數</th>
+                                <th>領域主題</th>
+                                <th>題組內容</th>
+                                <th>題組圖檔</th>
+                                <th>題組音檔</th>
+                                <th>picexamplegroupmark</th>
+                                <th>voiceexamplegroupmark</th>
+
+                            </tr>
+                        </thead>
+                    </table>
+                    <div class="form-group">
+                        <div class="chatboard">
+                            <div id="chat1" style="border: 0px ; width: 298px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="PassExampleDetail(0);">未通過</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="PassExampleDetail(1);">通過</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Monitor -->
+    <div class="modal fade" id="MonitorExample" tabindex="-1" role="dialog" aria-labelledby="MonitorExampleLable"
+        aria-hidden="true" style="font-size:0.8em;">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="MonitorExampleLable"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table id="ExampleContent" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>examId</th>
+                                <th>題目內容</th>
+                                <th>題目圖檔</th>
+                                <th>題目音檔</th>
+                                <th>A文字</th>
+                                <th>A圖檔</th>
+                                <th>A音檔</th>
+                                <th>B文字</th>
+                                <th>B圖檔</th>
+                                <th>B音檔</th>
+                                <th>C文字</th>
+                                <th>C圖檔</th>
+                                <th>C音檔</th>
+                                <th>D文字</th>
+                                <th>E文字</th>
+                                <th>F文字</th>
+                                <th>answer</th>
+                                <th>picexamplemark</th>
+                                <th>voiceexamplemark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picCmark</th>
+                                <th>voiceCmark</th>
+                            </tr>
+
+                        </thead>
+                    </table>
+                    <table id="Example" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>命題級數</th>
+                                <th>題目類別</th>
+                                <th>來源教材</th>
+                                <th>冊數</th>
+                                <th>課數</th>
+                                <th>領域主題</th>
+                                <th>題組內容</th>
+                                <th>題組圖檔</th>
+                                <th>題組音檔</th>
+                                <th>picexamplegroupmark</th>
+                                <th>voiceexamplegroupmark</th>
+
+                            </tr>
+                        </thead>
+                    </table>
+                    <div class="form-group">
+                        <div class="chatboard">
+                            <div id="chat2" style="border: 0px ; width: 298px;">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="lastbtn" type="button" class="btn btn-secondary btn-sm"
+                        onclick="LastExample();">上一題</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="PassExample(0);">未通過</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="PassExample(1);">通過</button>
+                    <button id="nextbtn" type="button" class="btn btn-secondary btn-sm"
+                        onclick="NextExample();">下一題</button>
+                    <button id="finishbtn" style="display:none;" type="button" class="btn btn-secondary btn-sm"
+                        onclick="FinishExample();">結束</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script>
+        $("#chat1").kendoChat({
+            sendMessage: function (e) {
+                sendText(e.text, examId);
+
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/comment/Create",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "Text": e.text,
+                        "ExamId": examId,
+                        "SenderType": 1,
+                    }),
+                });
+            }
+        });
+        $("#chat2").kendoChat({
+            sendMessage: function (e) {
+                sendText(e.text, examId);
+
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/comment/Create",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "Text": e.text,
+                        "ExamId": examId,
+                        "SenderType": 1,
+                    }),
+
+                });
+            }
+        });
+    </script>
+    <style>
+        .chatboard {
+            width: 300px;
+            height: 400px;
+            margin-left: 5em;
+            border: 1px solid black;
+            font-size: 1em;
+        }
+    </style>
+</body>
+
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="../../res/bootstrap/bootstrap.min2.css">
+
+
+  <link rel="stylesheet" type="text/css" href="../../res/css/production.css">
+  <script src="/res/js/production.js"></script>
+  <script src="/res/js/index.js"></script>
+
+  <script src="/res/bootstrap/bootstrap.min.js"></script>
+  <script src="/res/data/memberData.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+  <script src="/res/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/res/bootstrap/bootstrap.bundle.js"></script>
+
+  <!-- datatables -->
+  <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+  <link href="//cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet" />
+  <link href="//cdn.datatables.net/select/1.3.1/css/select.dataTables.min.css" rel="stylesheet" />
+
+
+  <!------ Include the above in your HEAD tag ---------->
+  <!-- icon -->
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css" href="../../res/css/APS.css">
+  <!-- 日期 -->
+
+  <!-- <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/bootstrap-material-design.min.css" />
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/ripples.min.css" /> -->
+
+  <link rel="stylesheet" href="/bootstrap-material-datetimepicker-gh-pages/css/bootstrap-material-datetimepicker.css" />
+  <link href='http://fonts.googleapis.com/css?family=Roboto:400,500' rel='stylesheet' type='text/css'>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/ripples.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/material.min.js"></script>
+  <!-- <script type="text/javascript"
+    src="https://rawgit.com/FezVrasta/bootstrap-material-design/master/dist/js/material.min.js"></script> -->
+  <script type="text/javascript" src="http://momentjs.com/downloads/moment-with-locales.min.js"></script>
+  <script type="text/javascript"
+    src="/bootstrap-material-datetimepicker-gh-pages/js/bootstrap-material-datetimepicker.js"></script>
+
+
+</head>
+<script>
+  var r = [];
+  var preRData = null;
+  var nextRData = null;
+  var pOrderTable;
+  $(document).ready(function () {
+    initOne();
+    // public int? POutOrderId { get; set; }
+    //   public int? PInOrderId { get; set; }
+    //   public int? POrderClientNo { get; set; }
+    //   public DateTime? POrderPredictDate { get; set; }
+    //   public DateTime? POrderCompleteDate { get; set; }
+    pOrderTable = $('#pOrderTable').DataTable({
+      "searching": false,
+      "filtering": true,
+      "ordering": false,
+      "serverSide": true,
+      "processing": true,
+      "ordering": false,
+
+      "ajax": {
+        "headers": {
+          'Authorization': getCookie("token")
+        },
+        "type": "POST",
+        url: parent.webApiUrl + "/pOrder/GetAll",
+        contentType: "application/json",
+        data: function (d) {
+          d.accountId = getCookie("id");
+          return JSON.stringify(d)
+        }
+      },
+
+      "columns": [
+        { 'data': "pInOrderId" },
+        // { 'data': "pOutOrderId" },
+        // { 'data': "pOrderClientNo" },
+        { 'data': "pOrderPredictDate" },
+        { 'data': "pOrderCompleteDate" },
+        { 'data': null },
+
+      ], "columnDefs": [{
+        "targets": [], // hidden column
+        "visible": false
+
+      }, {
+        "targets": 0, // add edit buttononclick="recordChat(' + row.id + ')
+        "render": function (data, type, row) {
+          var num = ""
+          if (row.pInOrderId == null) {
+            num = "無"
+
+          }
+          else
+            num = row.pInOrderId;
+          var html = "";
+          html += '<button onclick="gonCreate(' + row.id + ')" class="btn btn-secondary btn-block" style="width:100% height:100%";>' + num + '</button>'
+          return html
+
+          return html
+        },
+      },
+      {
+        "targets": [1, 2], render: function (data) {
+          if (data == null)
+            return "無";
+          else {
+            var dateOrigin = new Date(data)
+            dateOrigin.setHours(dateOrigin.getHours() + 8)
+            return moment(dateOrigin).format('YYYY-MM-DD hh:mm:ss');
+          }
+        }
+      },
+      {
+        "targets": 3, // add edit buttononclick="recordChat(' + row.id + ')
+        "render": function (data, type, row) {
+          var html = "";
+          html += ' <a href="javascript:void(0);" onclick="pOrderEdit(' + row.id + ')">編輯</a>'
+          html += ' | <a href="javascript:void(0);" onclick="pOrderDelete(' + row.id + ')">刪除</a> '
+
+          return html
+        },
+      },
+      ],
+      "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+      "language": { // change display text
+        "info": "",
+        "search": "搜尋",
+        "paginate": {
+          "first": "第一頁",
+          "last": "最後一頁",
+          "next": ">",
+          "previous": "<"
+        }
+      }
+
+    });
+
+    var html = ""
+    html += "<div>"
+    html += '<button class="btn-primary btn-sm" onclick="pOrderCreate()">新增訂單</button>'
+    html += '<input placeholder="請輸入對內訂單編號" style="width:20%"  align="right" Search.." id="pOrderSearch"></input>'
+
+    html += "</div>"
+    $("div.toolbar").html(html);
+  });
+
+</script>
+<script>
+  $(function () {
+    $('#date').bootstrapMaterialDatePicker
+      ({
+        time: false,
+        clearButton: true
+      });
+
+    $('#time').bootstrapMaterialDatePicker
+      ({
+        date: false,
+        shortTime: false,
+        format: 'HH:mm'
+      });
+
+    $('#date-format').bootstrapMaterialDatePicker
+      ({
+        format: 'dddd DD MMMM YYYY - HH:mm'
+      });
+    $('#date-fr').bootstrapMaterialDatePicker
+      ({
+        format: 'DD/MM/YYYY HH:mm',
+        lang: 'zh',
+        weekStart: 1,
+        cancelText: 'ANNULER',
+        nowButton: true,
+        switchOnClick: true
+      });
+
+    $('#pOrderCompleteDateCreate').bootstrapMaterialDatePicker
+      ({
+        weekStart: 0, format: 'YYYY/MM/DD HH:mm'
+      });
+
+    $('#pOrderPredictDateCreate').bootstrapMaterialDatePicker
+      ({
+        weekStart: 0, format: 'YYYY/MM/DD HH:mm', shortTime: true
+      })
+    $('#pOrderCompleteDateEdit').bootstrapMaterialDatePicker
+      ({
+        weekStart: 0, format: 'YYYY/MM/DD HH:mm'
+      });
+
+    $('#pOrderPredictDateEdit').bootstrapMaterialDatePicker
+      ({
+        weekStart: 0, format: 'YYYY/MM/DD HH:mm', shortTime: true
+      })
+    $('#min-date').bootstrapMaterialDatePicker({ format: 'YYYY/MM/DD HH:mm', minDate: new Date() });
+
+    $.material.init()
+    $('#pOrderSearch').on('keyup', function () {
+      myFunction(this, "pOrderTable");
+    });
+
+  });
+  function deleteData(id) {
+    var confirmStatus = confirm("是否刪除?");
+    if (confirmStatus)
+      alert("刪除成功")
+
+  }
+  function myFunction(input, tableName) {
+    var filter, table, tr, td, i, txtValue;
+    filter = input.value.toUpperCase();
+    table = document.getElementById(tableName);
+    tr = $("#" + tableName + " tbody tr");
+    console.log(tr)
+    for (i = 0; i < tr.length; i++) {
+
+      td = tr[i].getElementsByTagName("td")[0];
+
+      if (td) {
+        txtValue = td.textContent || td.innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+          tr[i].style.display = "";
+        } else {
+          $("#" + tableName + " tbody tr")[i].style.display = "none";
+        }
+      }
+    }
+  }
+
+
+
+</script>
+</head>
+
+<body>
+
+
+
+  <table id="pOrderTable" class="table" style="width:100%;font-size:120%">
+    <thead>
+      <tr>
+        <td style="width:20%;">對內訂單編號</td>
+        <!-- <td>對外訂單編號</td>
+        <td>客戶代碼</td> -->
+        <td>預估交貨日期</td>
+        <td>實際交貨日期</td>
+        <td>操作</td>
+
+        <!-- public int? POutOrderId { get; set; }
+            public int? PInOrderId { get; set; }
+            public int? POrderClientNo { get; set; }
+            public DateTime? POrderPredictDate { get; set; }
+            public DateTime? POrderCompleteDate { get; set; } -->
+      </tr>
+    </thead>
+    <tfoot>
+
+    </tfoot>
+  </table>
+
+
+  <!-- Create -->
+  <div class="word  modal fade modal_right" id="pOrderCreate" role="dialog" aria-labelledby="modalCreateLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+      <div class="myForm modal-content">
+        <div class="container">
+          <div class="row text-center">
+            <div class="col-20">
+            </div>
+            <dvi class="container h-20">
+              <!-- left frame -->
+              <div class="d-flex justify-content-center">
+                <div class="card mt-4 col-20 animated bounceInDown myForm">
+                  <div class="card-header">
+                    <h4>訂單-新增頁面</h4>
+                  </div>
+                  <div class="card-body">
+                    <form name="build">
+                      <div id="dynamic_container">
+                        <!-- 對外訂單編號
+                      對內訂單編號
+                      客戶代碼
+                      預估交貨日期
+                      實際交貨日期 
+                      public int Id { get; set; }
+                      public int POutOrderId { get; set; }
+                      public int PInOrderId { get; set; }
+                      public DateTime? POrderPredictDate { get; set; }
+                      public DateTime? POrderCompleteDate { get; set; }
+                      public int POrderClientNo { get; set; }
+                      -->
+                        <div class="form-group row">
+                          <input type="hidden" class="form-control form-control-sm col-sm-8" id="pOrderIdCreate">
+                        </div>
+                        <div>對外訂單編號</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder="" class="form-control"
+                            id="pOutOrderIdCreate" name="pOutOrderId" />
+                        </div>
+                        <div>對內訂單編號</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder="" id="pInOrderIdCreate"
+                            name="pInOrderId" class="form-control floating-label" />
+                        </div>
+                        <div>客戶代碼</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder="" id="pOrderClientNoCreate"
+                            name="pOrderClientNo" class="form-control floating-label" />
+                        </div>
+                        <div>預估交貸日期</div>
+                        <div class="form-group floating-label">
+
+                          <input style="background-color:#ffffff;" type="text" placeholder=""
+                            id="pOrderPredictDateCreate" name="pOrderPredictDate"
+                            class="form-control floating-label " />
+                        </div>
+                        <div>實際交貸日期</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder=""
+                            id="pOrderCompleteDateCreate" name="pOrderCompleteDate"
+                            class="form-control floating-label" />
+                        </div>
+
+                      </div>
+                  </div>
+
+                  <input type="button" style="color:#ffffff;" class="btn btn-success btn-lg float-right submit_btn"
+                    value="建立" onclick="pOrderCreateContent()" />
+                  </form>
+                </div>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="g" class="g">
+    <div class="word  modal fade modal_right" style="overflow-y: visible;" id="gon" role="dialog"
+      aria-labelledby="modalCreateLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class=" modal-content">
+          <div id="gon_Content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="word  modal fade modal_right" style="overflow-y: visible;" id="purchase" role="dialog"
+    aria-labelledby="modalCreateLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document" style="width: 120em;">
+      <div class=" modal-content">
+        <div id="purchase_Content"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Edit -->
+  <div class="word  modal fade modal_right" id="pOrderEdit" role="dialog" aria-labelledby="modalEditLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+      <div class="myForm modal-content">
+        <div class="container">
+          <div class="row text-center">
+            <div class="col-20">
+            </div>
+            <dvi class="container h-20">
+              <!-- left frame -->
+              <div class="d-flex justify-content-center">
+                <div class="card mt-4 col-20 animated bounceInDown myForm">
+                  <div class="card-header">
+                    <h4>訂單-編輯頁面</h4>
+                  </div>
+                  <div class="card-body">
+                    <form name="build">
+                      <div id="dynamic_container">
+                        <!-- 對外訂單編號
+                    對內訂單編號
+                    客戶代碼
+                    預估交貨日期
+                    實際交貨日期 
+                    public int Id { get; set; }
+                    public int POutOrderId { get; set; }
+                    public int PInOrderId { get; set; }
+                    public DateTime? POrderPredictDate { get; set; }
+                    public DateTime? POrderCompleteDate { get; set; }
+                    public int POrderClientNo { get; set; }
+                    -->
+                        <div class="form-group row">
+                          <input type="hidden" class="form-control form-control-sm col-sm-8" id="pOrderIdEdit">
+                        </div>
+                        <div>對外訂單編號</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder="" class="form-control"
+                            id="pOutOrderIdEdit" name="pOutOrderId" />
+                        </div>
+                        <div>對內訂單編號</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder="" id="pInOrderIdEdit"
+                            name="pInOrderId" class="form-control floating-label" />
+                        </div>
+                        <div>客戶代碼</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder="" id="pOrderClientNoEdit"
+                            name="pOrderClientNo" class="form-control floating-label" />
+                        </div>
+                        <div>預估交貸日期</div>
+                        <div class="form-group floating-label">
+
+                          <input style="background-color:#ffffff;" type="text" placeholder="" id="pOrderPredictDateEdit"
+                            name="pOrderPredictDate" class="form-control floating-label " />
+                        </div>
+                        <div>實際交貸日期</div>
+                        <div class="form-group">
+                          <input style="background-color:#ffffff;" type="text" placeholder=""
+                            id="pOrderCompleteDateEdit" name="pOrderCompleteDate" class="form-control floating-label" />
+                        </div>
+
+                      </div>
+                  </div>
+
+                  <input type="button" style="color:#ffffff;" class="btn btn-success btn-lg float-right submit_btn"
+                    value="儲存" onclick="pOrderEditContent()" />
+                  </form>
+                </div>
+
+
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+</body>
+
+
+
+</html>

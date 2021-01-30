@@ -1,0 +1,37 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <meta charset="utf-8"/>  
+    <title></title>  
+    <script language="JavaScript" src="http://code.jquery.com/jquery-1.11.0.js"></script>  
+    <script>  
+        $(function () {  
+            $("#test").change(function () {  
+                var objUrl = getObjectURL(this.files[0]);
+                	$("#img").attr("src", objUrl); 
+                	$("#img").show();
+                	$("#audio").attr("src", objUrl);
+                	$("#audio")[0].play();  
+                	$("#audio").show();           
+                  
+            });  
+        }); 
+        function getObjectURL(file) {  
+            var url = null;  
+            if (window.createObjectURL != undefined) { // basic  
+                url = window.createObjectURL(file);  
+            } else if (window.URL != undefined) { // mozilla(firefox)  
+                url = window.URL.createObjectURL(file);  
+            } else if (window.webkitURL != undefined) { // webkit or chrome  
+                url = window.webkitURL.createObjectURL(file);  
+            }  
+            return url;  
+        }  
+    </script>  
+</head>  
+<body>  
+<input id="test" type="file" multiple="multiple"/><br/>  
+<img id = "img" src="#" style="display: none;"  width="75" height="80" />
+<audio id="audio" controls="" style="display: none;"></audio>  
+</body>  
+</html>  

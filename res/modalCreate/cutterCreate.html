@@ -1,0 +1,102 @@
+<div class="container">
+	<div class="row text-center">
+		<div class="col-12">
+		</div>
+		<dvi class="container h-120">
+
+			<!-- left frame -->
+
+			<div class="d-flex justify-content-center">
+				<div class="card mt-8 col-12 animated bounceInDown myForm">
+					<div class="card-header">
+						<h4>刀具-新增頁面</h4>
+					</div>
+					<div class="card-body">
+						<form name="build">
+							<div id="dynamic_container">
+								<!-- 工(刀)具Id序號
+								工(刀)具關聯訂單序號
+								工(刀)具關聯員工序號
+								工(刀)具類別(車刀、鑽頭、鉋刀)
+								工(刀)具名稱
+								工(刀)具財編
+								工(刀)具廠牌
+								工(刀)具規格
+								工(刀)具狀態使用中或閒置中 
+								-->
+								<div class="form-group row">
+									<input type="hidden" class="form-control form-control-sm col-sm-8"
+										id="toolcutterIdCreate">
+								</div>
+								<div>刀具名稱</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="toolcutterNameCreate" name="cutterName"
+										class="form-control" />
+								</div>
+
+								<div>類別</div>
+								<div class="input-group">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div> -->
+									<input type="text" placeholder="" class="form-control"id="toolcutterClassCreate"name="cutterClass" />
+								</div>
+								
+								<div>財編</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="toolcutterNoCreate"name="cutterNo" class="form-control"/>
+								</div>
+								<div>廠牌</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="toolcutterBrandCreate"name="cutterBrand" class="form-control"/>
+								</div>
+								<div>規格</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="toolcutterSizeCreate"name="cutterSize" class="form-control"/>
+								</div>
+								<!-- <div>狀態</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" id="toolcutterStatusCreate"name="cutterStatus" class="form-control"/>
+								</div>
+							 -->
+							</div>
+					</div>
+					<div class="card-footer">
+						<!-- <div>時間</div>
+						<div class="input-group mt-3" style="width:120px;float:left;margin:20px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="起始" class="form-control" />
+						</div>
+						<div class="input-group mt-3" style="width:120px;margin:10px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="結束" class="form-control" />
+						</div> -->
+					</div>
+					<input type="button" class="btn btn-success btn-lg float-right submit_btn" value="建立"
+						onclick="toolcutterCreateContent()" />
+					</form>
+				</div>
+
+
+			</div>
+	</div>
+</div>

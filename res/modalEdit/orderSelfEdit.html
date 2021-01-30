@@ -1,0 +1,279 @@
+<head>
+	<!-- <link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/bootstrap-material-design.min.css" /> -->
+	<link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/ripples.min.css" />
+
+	<link rel="stylesheet"
+		href="/bootstrap-material-datetimepicker-gh-pages/css/bootstrap-material-datetimepicker.css" />
+	<link href='http://fonts.googleapis.com/css?family=Roboto:400,500' rel='stylesheet' type='text/css'>
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/ripples.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/material.min.js"></script>
+	<!-- <script type="text/javascript"
+		src="https://rawgit.com/FezVrasta/bootstrap-material-design/master/dist/js/material.min.js"></script> -->
+	<script type="text/javascript" src="http://momentjs.com/downloads/moment-with-locales.min.js"></script>
+	<script type="text/javascript"
+		src="/bootstrap-material-datetimepicker-gh-pages/js/bootstrap-material-datetimepicker.js"></script>
+	<script>
+		$(document).ready(function () {
+			$('#sOrderImageEdit').attr("src", "/res/img/upload_image.png");
+		});
+		function getURL(file) {
+			var url = null;
+			if (window.EditObjectURL != undefined) { // basic  
+				url = window.EditObjectURL(file);
+			} else if (window.URL != undefined) { // mozilla(firefox)  
+				url = window.URL.EditObjectURL(file);
+			} else if (window.webkitURL != undefined) { // webkit or chrome  
+				url = window.webkitURL.EditObjectURL(file);
+			}
+			return url;
+		}
+		function PicCheck(sender) {
+			var validExts = new Array(".jpg");
+			var fileExt = sender.value;
+			console.log(fileExt);
+			fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+			if (validExts.indexOf(fileExt) < 0) {
+				alert("檔案類型錯誤，可接受的副檔名有：" + validExts.toString());
+				sender.value = null;
+				return false;
+			}
+			else
+				return true;
+		}
+		$(function () {
+			$("#UploadsOrderImageEdit").change(function () {
+				if (PicCheck(this)) {
+					var objUrl = getURL(this.files[0]);
+					console.log(this.files[0]);
+					if (this.files.length != 0) {
+						$("#sOrderImageEdit").attr("src", objUrl);
+						$("#sOrderImageEdit").show();
+					}
+				}
+			});
+			$('#date').bootstrapMaterialDatePicker
+				({
+					time: false,
+					clearButton: true
+				});
+
+			$('#time').bootstrapMaterialDatePicker
+				({
+					date: false,
+					shortTime: false,
+					format: 'HH:mm'
+				});
+
+			$('#date-format').bootstrapMaterialDatePicker
+				({
+					format: 'dddd DD MMMM YYYY - HH:mm'
+				});
+			$('#date-fr').bootstrapMaterialDatePicker
+				({
+					format: 'DD/MM/YYYY HH:mm',
+					lang: 'tw',
+					weekStart: 1,
+					cancelText: 'ANNULER',
+					nowButton: true,
+					switchOnClick: true
+				});
+
+			$('#sOrderPredictDateEdit').bootstrapMaterialDatePicker
+				({
+					weekStart: 0, format: 'YYYY/MM/DD HH:mm'
+				});
+
+			$('#sOrderCompleteDateEdit').bootstrapMaterialDatePicker
+				({
+					weekStart: 0, format: 'YYYY/MM/DD HH:mm', shortTime: true
+				})
+
+			$('#min-date').bootstrapMaterialDatePicker({ format: 'YYYY/MM/DD HH:mm', minDate: new Date() });
+
+			$.material.init()
+		}); 
+	</script>
+
+</head>
+<div class="container">
+	<div class="row text-center">
+		<div class="col-12">
+		</div>
+		<dvi class="container h-120">
+
+			<!-- left frame -->
+
+			<div class="d-flex justify-content-center">
+				<div class="card mt-8 col-12 animated bounceInDown myForm">
+					<div class="card-header">
+						<h4>加工單(自製)-編輯頁面</h4>
+					</div>
+					<div class="card-body">
+						<form name="build">
+							<div id="dynamic_container">
+								<!-- 
+								自製訂單編號
+								負責人編號
+								機台序號
+								刀具序號
+								程式
+								機台設定
+								生產件數
+								材料序號
+								預估完工日期
+								實際完工日期 
+								public int Id { get; set; }
+								public int? SOrderMemberName { get; set; }
+								public int? SOrderMachine { get; set; }
+								public int? SOrderTool { get; set; }
+								public string SOrderProgram { get; set; }
+								public string SOrderSetting { get; set; }
+								public int? SOrderCount { get; set; }
+								public int? SOrderMaterial { get; set; }
+								public DateTime? SOrderPredictDate { get; set; }
+								public DateTime? SOrderCompleteDate { get; set; }
+								-->
+								<div class="form-group row">
+									<input type="hidden" class="form-control form-control-sm col-sm-8"
+										id="sOrderIdEdit">
+								</div>
+								<div>自製工單編號</div>
+								<div class="input-group">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div> -->
+									<input disabled="disabled" type="text" placeholder="" id="sGonNoEdit"
+										class="form-control"></input>
+								</div>
+
+								<div>指定圖檔</div>
+								<div class="input-group">
+									<!-- <div class="input-group-prepend">
+												<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+											</div> -->
+									<!-- <input type="text" placeholder="" id="oOrderImageEdit" name="oOrderImage" class="form-control" /> -->
+									<label class="btn-sm btn-outline-light btn-image">
+										<img class="img-rounded" src="#" id="sOrderImageEdit" width="75"
+											height="75" />
+										<input accept=".jpg" id="UploadsOrderImageEdit" name="sOrderImage"
+											class="form-control" style="display:none;" type="file">
+									</label>
+								</div>
+								<div>製程編排</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderScheduleEdit" name="sOrderSchedule"
+										class="form-control" />
+								</div>
+								<div>製程工法</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderMethodEdit" name="sOrderMethod"
+										class="form-control" />
+								</div>
+								<div>負責人編號</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div> -->
+									<select type="text" placeholder="" id="sOrderMemberNameEdit"
+										name="sOrderMemberName" class="form-control" />
+								</div>
+								<div>機台序號</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderMachineEdit" name="sOrderMachine"
+										class="form-control" />
+								</div>
+								<div>刀具序號</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderToolEdit" name="sOrderTool"
+										class="form-control" />
+								</div>
+								<div>程式</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderProgramEdit" name="sOrderProgram"
+										class="form-control" />
+								</div>
+								<div>機台設定</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderSettingEdit" name="sOrderSetting"
+										class="form-control" />
+								</div>
+								<div>生產件數</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderCountEdit" name="sOrderCount"
+										class="form-control" />
+								</div>
+								<div>材料序號</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderMaterialEdit" name="sOrderMaterial"
+										class="form-control" />
+								</div>
+								<div>預估完工日期</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderPredictDateEdit"
+										name="sOrderPredictDate" class="form-control" />
+								</div>
+								<div>實際完工日期</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="sOrderCompleteDateEdit"
+										name="sOrderCompleteDate" class="form-control" />
+								</div>
+							</div>
+					</div>
+					<div class="card-footer">
+						<!-- <div>時間</div>
+						<div class="input-group mt-3" style="width:120px;float:left;margin:20px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="text" placeholder="起始" class="form-control" />
+						</div>
+						<div class="input-group mt-3" style="width:120px;margin:10px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="text" placeholder="結束" class="form-control" />
+						</div> -->
+					</div>
+					<input type="button" style="color:#ffffff;" class="btn btn-success btn-lg float-right submit_btn"
+						value="儲存"" onclick="orderSelfEditContent()" />
+					</form>
+				</div>
+
+
+			</div>
+	</div>
+</div>

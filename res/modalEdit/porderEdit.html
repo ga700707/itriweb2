@@ -1,0 +1,90 @@
+<div class="container">
+	<div class="row text-center">
+		<div class="col-12">
+		</div>
+		<dvi class="container h-120">
+
+			<!-- left frame -->
+
+			<div class="d-flex justify-content-center">
+				<div class="card mt-8 col-12 animated bounceInDown myForm">
+					<div class="card-header">
+						<h4 id="peopleEdit_title"></h4>
+					</div>
+					<div class="card-body">
+						<form name="build">
+							<div id="dynamic_container">
+								<!-- 
+								對外訂單編號
+								對內訂單編號
+								客戶代碼
+								預估交貨日期
+								實際交貨日期
+								-->
+								<div class="form-group row">
+									<input type="hidden" class="form-control form-control-sm col-sm-8" id="pOrderIdEdit">
+								</div>
+								<div>對外訂單編號</div>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div>
+									<input type="text" placeholder="" class="form-control" id="pOutOrderIdEdit" name="pOutOrderId" />
+								</div>
+								<div>對內訂單編號</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div>
+									<input type="text" placeholder="" id="pInOrderIdEdit" name="pInOrderId"
+										class="form-control" />
+								</div>
+								<div>客戶代碼</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" id="pOrderClientNoEdit" name="pOrderClientNo" class="form-control" />
+								</div>
+								<div>預估交貸日期</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" id="pOrderPredictDateEdit" name="pOrderPredictDate" class="form-control" />
+								</div>
+								<div>實際交貸日期</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" id="pOrderCompleteDateEdit" name="pOrderCompleteDate" class="form-control" />
+								</div>
+								
+							</div>
+								
+					</div>
+					<div class="card-footer">
+						<!-- <div>時間</div>
+						<div class="input-group mt-3" style="width:120px;float:left;margin:20px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="起始" class="form-control" />
+						</div>
+						<div class="input-group mt-3" style="width:120px;margin:10px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="結束" class="form-control" />
+						</div> -->
+					</div>
+					<input type="button" class="btn btn-success btn-lg float-right submit_btn" value="編輯"
+						onclick="pOrderEditContent()" />
+					</form>
+				</div>
+
+
+			</div>
+	</div>
+</div>

@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>合作廠商管理系統</title>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <!-- Button -->
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+
+    <script src="/res/js/InitModal.js" type="text/javascript"></script>
+
+
+    <!--socket -->
+    <script src="/res/js/SocketIO.js"></script>
+
+    <!--InitModal-->
+    <script src="/res/js/InitModal.js" type="text/javascript"></script>
+    <style>
+        .tablesRows {
+            background: rgb(3, 151, 139);
+            font-size: 1.5em;
+            width: 7em;
+            height: 1.5em;
+            font-family: "DFKai-sb";
+            text-align: center;
+            color: white;
+        }
+
+        .table {
+            background-color: transparent;
+            table-layout: fixed;
+        }
+
+        .timer {
+            font-size: larger;
+            color: #C71585;
+
+        }
+
+        .andy {
+            background-color: whitesmoke;
+            height: 88px;
+            line-height: 88px;
+            text-align: center;
+            width: 240px;
+            padding-top: 10px;
+            border: dotted 3px gainsboro;
+            border-radius: 5px;
+            box-shadow: 5px 5px 5px #888888;
+        }
+
+        .day {
+            color: #6A5ACD
+        }
+    </style>
+    <script>
+        var i = 0;
+        var dataTables;
+        var percent = 0;
+        var examId = 0;
+        var ExamRoomId = 0;
+        var interval = 1000;
+        $(document).ready(function () {
+
+
+            $.each(LevelData, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtlevel").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $('#ExamTable').hide();
+            var htmlElement = $("#divId");
+            var html = "<span class='day'><b class='timer'>" + 0 + "</b>天</span>" +
+                "<span class='day'><b class='timer'>" + 0 + "</b>时</span>" +
+                "<span class='day'><b class='timer'>" + 0 + "</b>分</span>" +
+                "<span class='day'><b class='timer'>" + 0 + "</b>秒";
+            htmlElement.html(html);
+
+        });
+        function MakeExamRoom(Category) {
+            if (dataTables != null)
+                dataTables.destroy();
+            else
+                $('#ExamTable').show();
+
+            InitModal(parseInt($("#txtlevel").val()), Category);
+
+            dataTables = $('#ExamTable').DataTable({
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "async": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/room/GetAll",
+                    contentType: "application/json",
+                    data: function (d) {
+
+                        d.AccountId = getCookie("id");
+                        d.GroupId = getCookie("GroupId");
+                        d.Level = $("#txtlevel").val();
+                        d.Category = Category;
+                        d.ExamRoomId = ExamRoomId;
+
+                        return JSON.stringify(d)
+                    }
+                },
+                "rowCallback": function (row, data) {
+                    percent = 100;
+                    console.log(data);
+                    $("#pbar").text(percent + "%");
+                    $("#pbar").css("width", percent + "%");
+                    $('#searchModal').modal('hide');//伺服器停止了5秒,sleep(5)，假設是查詢資料用了5秒
+                    $('#searchModal').on('hidden.bs.modal', function () {
+                        //    // 執行一些動作...
+                        percent = 0;
+                        $("#Getauthentication").attr("disabled", true);
+                        $("#StratQuiz").attr("disabled", false);
+                        //$("#homeworkContent").html(mydata); //顯示後端傳遞的結果
+                    });
+
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'groupId' },
+                    { 'data': 'monitorGroupId' },
+                    { 'data': 'isUpload' },
+                    { 'data': null },
+                    { 'data': 'level' },
+                    { 'data': 'category' },//5
+                    { 'data': 'reference' },
+                    { 'data': 'volume' },
+                    { 'data': 'class' },
+                    { 'data': 'theme' },
+                    { 'data': null },
+                ], "columnDefs": [{
+                    "targets": [0, 1, 2, 3], // hidden column
+                    "visible": false
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        var checked = (row.isUpload == 0) ? "未上傳" : "已上傳";
+                        return '<a href="javascript:void(0);" onclick="changeUpload(' + row.id + ',\'' + row.isUpload + '\');">' + checked + '</a>';
+                    }
+                }, {
+                    "targets": 5,
+                    "render": function (data, type, row) {
+                        var result = (row.level == null) ? "無" : LevelData[row.level]
+                        return result;
+                    }
+
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        var result = ""
+                        switch(row.level)
+                        {
+                            case 0:
+                            case 1:
+                            result = (row.category == null) ? "無" : CategoryA[row.category];
+                            break;
+                            case 2:
+                            case 3:
+                            result = (row.category == null) ? "無" : CategoryB[row.category];
+                            break;
+                        }
+
+                        return result;
+                    }
+
+                }, {
+                    "targets": 7,
+                    "render": function (data, type, row) {
+                        var result = (row.reference == null) ? "無" : TextBookData[row.reference];
+
+                        return result;
+                    }
+
+                }, {
+                    "targets": 10,
+                    "render": function (data, type, row) {
+                        var result = (row.theme == null) ? "無" : ThemeData[row.theme];
+
+                        return result;
+                    }
+
+                }, {
+                    "targets": 11, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        console.log(row.id);
+                        var html = "";
+                        html += '<a href="javascript:void(0);" onclick="DetailExampleContent(' + row.id + ',' + row.level + ',' + row.category + ')">詳細</a> '
+                        html += '| <a href="javascript:void(0);" onclick="EditExam (' + row.id + ',' + row.level + ',' + row.category + ')">編輯</a>'
+                        return html
+                    }
+                }],
+                "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+                "language": { // change display text
+                    "info": " 目前顯示 _START_ 至 _END_ 筆，共計 _TOTAL_ 筆。",
+                    "paginate": {
+                        "first": "第一頁",
+                        "last": "最後一頁",
+                        "next": ">",
+                        "previous": "<"
+                    }
+                }
+
+            });
+            dataTables.on('draw.dt', function () {
+                dataTables.column(4, {}).nodes().each(function (cell, i) {
+                    //i 从0开始，所以这里先加1
+
+                    i = i + 1;
+                    //服务器模式下获取分页信息，使用 DT 提供的 API 直接获取分页信息
+
+                    var page = dataTables.page.info();
+                    //当前第几页，从0开始
+
+                    var pageno = page.page;
+                    //每页数据
+
+                    var length = page.length;
+                    //行号等于 页数*每页数据长度+行号
+
+                    var columnIndex = (i + pageno * length);
+                    cell.innerHTML = columnIndex;
+                });
+            });
+        }
+        async function AddProgress(MaxProgress) {
+
+            setInterval(function () {
+                if (percent >= MaxProgress)
+                    return
+                if (percent < 25)
+                    percent++;
+                else
+                    percent += 2;
+                $("#pbar").text(percent + "%");
+                $("#pbar").css("width", percent + "%");
+            }, 100);
+        }
+        function Getauthentication() {
+            AddProgress(60);
+            $("#searchModal").modal("show");//顯示“正在查詢”字樣的模態框
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/room/GetAuthentication",
+                contentType: "application/json;charset=utf-8",
+                async: true,
+                data: JSON.stringify({
+                    'AccountId': getCookie("id"),
+                    'number': 50,
+                    'Level': $("#txtlevel").val()
+                }),
+                success: function (e) {
+                    console.log(e);
+                    percent = 80;
+                    $("#pbar").text(percent + "%");
+                    $("#pbar").css("width", percent + "%");
+                    AddProgress(90);
+                    ExamRoomId = e.id
+                    MakeExamRoom(0);
+
+                    $("#Authorization").text(e.authentication);
+                }
+            });
+        }
+
+        function StartQuiz() {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/room/StartQuiz",
+                contentType: "application/json;charset=utf-8",
+                async: true,
+                data: JSON.stringify({
+                    'ExamRoomId': ExamRoomId,
+                }),
+                success: function (e) {
+                    $("#StratQuiz").attr("disabled", true);
+                    sentStartDate(e.startDate, e.id);
+                    var Time = setInterval(function () {
+                        var now = new Date();
+                        var endDate = new Date(e.startDate);
+                        endDate.setHours(endDate.getHours() + 2)
+                        if (now >= endDate) {
+                            clearInterval(Time)
+                            alert("測驗結束");
+                            return;
+                        }
+                        ShowTimer(e.startDate);
+                    }, interval);
+                }
+            });
+        }
+        function DetailExampleContent(id, level, category) {
+            examId = id
+            InitModal(level, category);
+            $('#DetailExample').DataTable({
+                "lengthMenu": [[1, 2, 3], [1, 2, 3]],
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "lengthChange": false,
+                "paging": false,
+
+                "destroy": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/examTemplate/GetExamDetail",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Id = examId
+                        return JSON.stringify(d)
+                    },
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'level' },
+                    { 'data': 'category' },
+                    { 'data': 'reference' },
+                    { 'data': 'volume' },
+                    { 'data': 'class' },   //5
+                    { 'data': 'theme' },
+                    { 'data': 'txtExampleGroup' },
+                    { 'data': 'picExampleGroup' },
+                    { 'data': 'voiceExampleGroup' },
+                    { 'data': 'picExampleGroupMark' },
+                    { 'data': 'voiceExampleGroupMark' },
+
+                ], "columnDefs": [{
+                    "targets": hideExamarray, // hidden column
+                    "visible": false
+                }, {
+                    "targets": 1,
+                    "render": function (data, type, row) {
+
+
+                        return LevelData[row.level];
+                    }
+                }, {
+                    "targets": 2,
+                    "render": function (data, type, row) {
+                        switch (row.level) {
+                            case 0:
+                            case 1:
+                                return CategoryA[row.category];
+                                break;
+                            case 2:
+                            case 3:
+                                return CategoryB[row.category];
+                                break;
+                            case 4:
+                            case 5:
+                                return CategoryC[row.category];
+                        }
+                    }
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        return TextBookData[row.reference];
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        return ThemeData[row.theme];
+                    }
+                }, {
+                    "targets": 8,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExampleGroup != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExampleGroup + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleGroupMark != null)
+                            html += '<a>備註 :' + row.picExampleGroupMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        html += '</div>'
+                        return html
+                    }
+                }],
+            });
+            $('#DetailExampleContent').DataTable({
+                "searching": false,
+                "ordering": false,
+                "lengthChange": false,
+                "DeferRender": true,
+                "paging": false,
+                "destroy": true,
+                "info": false,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/examTemplate/GetExampleContent",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.examId = examId;
+                        return JSON.stringify(d)
+                    },
+                },
+
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'examId' },
+                    { 'data': 'txtExample' },
+                    { 'data': 'picExample' },
+                    { 'data': 'voiceExample' },
+                    { 'data': 'txtA' },    //5
+                    { 'data': 'picA' },
+                    { 'data': 'voiceA' },
+                    { 'data': 'txtB' },
+                    { 'data': 'picB' },
+                    { 'data': 'voiceB' },//10
+                    { 'data': 'txtC' },
+                    { 'data': 'picC' },
+                    { 'data': 'voiceC' },
+                    { 'data': 'txtD' },
+                    { 'data': 'txtE' },//15
+                    { 'data': 'txtF' },
+                    { 'data': 'answer' },
+                    { 'data': 'picExampleMark' },
+                    { 'data': 'voiceExampleMark' },
+                    { 'data': 'picAmark' },
+                    { 'data': 'voiceAmark' },
+                    { 'data': 'picBmark' },
+                    { 'data': 'voiceBmark' },
+                    { 'data': 'picCmark' },
+                    { 'data': 'voiceCmark' },
+                ], "columnDefs": [{
+                    "targets": hideExamplearray.concat([18, 19, 20, 21, 22, 23, 24, 25]), // hidden column
+                    "visible": false
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExample != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExample + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleMark != null)
+                            html += '<a>備註 :' + row.picExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 4,
+                    "render": function (data, type, row) {
+                        var html = "";
+                        console.log("voice" + row.voiceExample)
+
+                        html += '<div class="row">'
+                        if (row.voiceExample != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceExample + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceExampleMark != null)
+                            html += '<a>備註 :' + row.voiceExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picA != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picA + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picAmark != null)
+                            html += '<a>備註 :' + row.picAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 7,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceA != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceA + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceAmark != null)
+                            html += '<a>備註 :' + row.voiceAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 9,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picB != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picB + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picBmark != null)
+                            html += '<a>備註 :' + row.picBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 10,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceB != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceB + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceBmark != null)
+                            html += '<a>備註 :' + row.voiceBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 12,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picC != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picC + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picCmark != null)
+                            html += '<a>備註 :' + row.picCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 13,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceC != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceC + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceCmark != null)
+                            html += '<a>備註 :' + row.voiceCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 17,
+                    "render": function (data, type, row) {
+                        return AnswerChoice[row.answer];
+                    }
+                },],
+            });
+
+            $('#modalRecord').modal('show');
+        }
+        function EditExam(id, level, category) {
+            examId = id;
+            $("#EditModal1").modal('show');
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/examTemplate/GetExamDetail",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "Id": examId
+                }),
+                success: function (e) {
+                    $("#volumeEdit").val(e.data[0]["volume"]);
+                    $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                        $('#' + $(this)[0].id).val(e.data[0][$(this)[0].id.replace("Edit", "")]);
+                    });
+                    $("#Edit1-modal-panel").find("img").each(function () {
+                        if (e.data[0][$(this)[0].id.replace("Edit", "")] != null) {
+                            $('#' + $(this)[0].id).attr("src", "data:image;base64," + e.data[0][$(this)[0].id.replace("Edit", "")]);
+                        }
+                        else
+                            $('#' + $(this)[0].id).attr("src", "/res/img/upload_image.png");
+                    });
+                }
+            });
+        }
+        function EditNextPage() {
+            formData = new FormData();
+            formData.append("GroupId", getCookie("GroupId"));
+            formData.append("AccountId", getCookie("id"));
+            formData.append("ExamId", examId);
+            var check = false;
+            $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+
+            $("#Edit1-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == "http://" + window.location.host + "/res/img/upload_image.png")
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+
+            $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "")
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].value)
+                else
+                    formData.append($(this)[0].id.replace("Edit", ""), "")
+            });
+
+            $("#Edit1-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0)
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].files[0])
+            });
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/examTemplate/GetExampleContent",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "examId": examId
+                }),
+                success: function (e) {
+                    if (e.data.length == 0) {
+                        alert("題目有問題");
+                        return;
+                    }
+
+                    EditItem = 0;
+                    EditExampleContent = e.data;
+
+                    $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                        $('#' + $(this)[0].id).val(e.data[0][$(this)[0].id.replace("Edit", "")]);
+                    });
+
+
+                    $("#Edit2-modal-panel").find("img").each(function () {
+                        if (e.data[0][$(this)[0].id.replace("Edit", "")] != null)
+                            $('#' + $(this)[0].id).attr("src", "data:image;base64," + e.data[0][$(this)[0].id.replace("Edit", "")]);
+                        else
+                            formData.append($(this)[0].id.replace("Edit", ""), "")
+                    });
+
+                    $("#Edit2-modal-panel").find("audio").each(function () {
+                        $('#' + $(this)[0].id).attr("src", "data:audio/wav;base64," + e.data[0][$(this)[0].id.replace("Edit", "")]);
+                    });
+                    console.log(EditExampleContent.length);
+                    console.log(EditItem);
+                    if (EditExampleContent.length - 1 == EditItem)
+                        $('#EditNextItemBtn').hide();
+                    else
+                        $('#EditNextItemBtn').show();
+                    $("#EditModal2").modal('show');
+
+                }
+            });
+        }
+        function EditNextItem() { // 建立初始化
+            EditItem++;
+            var check = false;
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+            $("#Edit2-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == "http://" + window.location.host + "/res/img/upload_image.png")
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+            formData.append("Length", length);
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "") {
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].value)
+                    $(this).val("");
+                }
+                else
+                    formData.append($(this)[0].id.replace("Edit", ""), " ")
+
+            });
+
+            $("#Edit2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0) {
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].files[0])
+                    $(this).removeAttr('src');
+                }
+            });
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                $('#' + $(this)[0].id).val(EditExampleContent[EditItem][$(this)[0].id.replace("Edit", "")]);
+            });
+
+            $("#Edit2-modal-panel").find("img").each(function () {
+                $('#' + $(this)[0].id).attr("src", "data:image;base64," + EditExampleContent[EditItem][$(this)[0].id.replace("Upload", "").replace("Edit", "")]);
+            });
+
+            $("#Edit2-modal-panel").find("audio").each(function () {
+                $('#' + $(this)[0].id).attr("src", "data:audio/wav;base64," + EditExampleContent[EditItem][$(this)[0].id.replace("Upload", "").replace("Edit", "")]);
+            });
+            console.log(EditExampleContent.length);
+            console.log(EditItem);
+            if (EditExampleContent.length - 1 == EditItem)
+                $('#EditNextItemBtn').hide();
+            else
+                $('#EditNextItemBtn').show();
+        }
+        function EditExamContent() {
+            var check = false;
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+            $("#Edit2-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == "http://" + window.location.host + "/res/img/upload_image.png")
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "") {
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].value)
+                }
+                else
+                    formData.append($(this)[0].id.replace("Edit", ""), " ")
+
+            });
+            $("#Edit2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0) {
+                    formData.append($(this)[0].id.replace("Edit", "").replace("Upload", ""), $(this)[0].files[0])
+                }
+            });
+
+            // 建立初始化
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/exampleTemplate/UpdateExam",
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function () {
+                    dataTables.draw();
+                    //InitModal();
+                    $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                        $(this).val("");
+                    });
+                    $("#Edit1-modal-panel").find("img,audio").each(function () {
+                        $(this).removeAttr('src');
+                    });
+                    $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                        $(this).val("");
+                    });
+                    $("#Edit2-modal-panel").find("img,audio").each(function () {
+                        $(this).removeAttr('src');
+                    });
+
+                    $('#EditModal1').modal('hide');
+                    $('#EditModal2').modal('hide');
+                },
+            })
+        }
+        function fnWordReport() {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/room/GetExamToPrint",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "ExamRoomId": ExamRoomId
+                }),
+                success: function (e) {
+                    var tab_text = " ";
+                    var exam_index = 0;
+                    console.log(e);
+                    var cat_zero = [];
+                    var cat_one = [];
+                    var cat_two = [];
+                    var cat_three = [];
+                    var cat_four = [];
+                    var cat_five = [];
+                    var cat_six = [];
+                    var cat_seven = [];
+                    var cat_eight = [];
+
+                    for (var i = 0; i < e.length; i++) {
+                        console.log(e[i].category)
+                        if (e[i].category == 0) {
+                            cat_zero.push((e[i]))
+                        }
+                        else if (e[i].category == 1) {
+                            cat_one.push(e[i])
+                        }
+                        else if (e[i].category == 2) {
+                            cat_two.push((e[i]))
+                        }
+                        else if (e[i].category == 3) {
+                            cat_three.push((e[i]))
+                        }
+                        else if (e[i].category == 4) {
+                            cat_four.push((e[i]))
+                        }
+                        else if (e[i].category == 5) {
+                            cat_five.push((e[i]))
+                        }
+                        else if (e[i].category == 6) {
+                            cat_six.push((e[i]))
+                        }
+                        else if (e[i].category == 7) {
+                            cat_seven.push((e[i]))
+                        }
+                        else if (e[i].category == 8) {
+                            cat_eight.push((e[i]))
+                        }
+
+                    }
+                    for (var a = 0; a < cat_zero.length; a++) {
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_zero[a].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_zero[a].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<tr><td><img src= \"data:image/gif;base64," + cat_zero[a].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_zero[a].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_zero[a].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_zero[a].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_zero[a].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_zero[a].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_zero[a].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_zero[a].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_zero[a].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_zero[a].examplecontenttemplate[0].txtA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_zero[a].examplecontenttemplate[0].txtA + " (B)" + cat_zero[a].examplecontenttemplate[0].txtB + " (C)" + cat_zero[a].examplecontenttemplate[0].txtC + " (D)" + cat_zero[a].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_zero[a].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_one.length; m++) {
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_one[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_one[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_one[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_one[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_one[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_one[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_one[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_one[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_one[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_one[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_one[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_one[m].examplecontenttemplate[0].txtA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_one[m].examplecontenttemplate[0].txtA + " (B)" + cat_one[m].examplecontenttemplate[0].txtB + " (C)" + cat_one[m].examplecontenttemplate[0].txtC + " (D)" + cat_one[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_one[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_two.length; m++) {
+
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_two[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_two[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_two[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_two[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_two[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_two[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_two[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_two[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_two[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_two[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_two[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_two[m].examplecontenttemplate[0].txtA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_two[m].examplecontenttemplate[0].txtA + " (B)" + cat_two[m].examplecontenttemplate[0].txtB + " (C)" + cat_two[m].examplecontenttemplate[0].txtC + " (D)" + cat_two[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_two[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_three.length; m++) {
+
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_three[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_three[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_three[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_three[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_three[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_three[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_three[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_three[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_three[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_three[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_three[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_three[m].examplecontenttemplate[0].txtA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_three[m].examplecontenttemplate[0].txtA + " (B)" + cat_three[m].examplecontenttemplate[0].txtB + " (C)" + cat_three[m].examplecontenttemplate[0].txtC + " (D)" + cat_three[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_three[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_four.length; m++) {
+
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_four[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_four[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_four[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_four[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_four[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_four[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_four[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_four[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_four[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_four[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_four[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_four[m].examplecontenttemplate[0].txtA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_four[m].examplecontenttemplate[0].txtA + " (B)" + cat_four[m].examplecontenttemplate[0].txtB + " (C)" + cat_four[m].examplecontenttemplate[0].txtC + " (D)" + cat_four[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_four[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_five.length; m++) {
+
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_five[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_five[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_five[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_five[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_five[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_five[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_five[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_five[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_five[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_five[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_five[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_five[m].examplecontenttemplate[0].txtA) {
+
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_five[m].examplecontenttemplate[0].txtA + " (B)" + cat_five[m].examplecontenttemplate[0].txtB + " (C)" + cat_five[m].examplecontenttemplate[0].txtC + " (D)" + cat_five[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_five[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_six.length; m++) {
+
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_six[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_six[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_six[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_six[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_six[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_six[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_six[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_six[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_six[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_six[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_six[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_six[m].examplecontenttemplate[0].txtA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_six[m].examplecontenttemplate[0].txtA + " (B)" + cat_six[m].examplecontenttemplate[0].txtB + " (C)" + cat_six[m].examplecontenttemplate[0].txtC + " (D)" + cat_six[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_six[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_seven.length; m++) {
+
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_seven[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_seven[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_seven[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_seven[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_seven[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_seven[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_seven[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_seven[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_seven[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_seven[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_seven[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_seven[m].examplecontenttemplate[0].txtA) {
+
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_seven[m].examplecontenttemplate[0].txtA + " (B)" + cat_seven[m].examplecontenttemplate[0].txtB + " (C)" + cat_seven[m].examplecontenttemplate[0].txtC + " (D)" + cat_seven[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_seven[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    for (var m = 0; m < cat_eight.length; m++) {
+
+                        exam_index += 1;
+                        tab_text = tab_text + "<table>"
+                        tab_text = tab_text + "<tr><td><b><strong>第" + exam_index + "題</strong></b></td></tr>"
+                        tab_text = tab_text + "<tr><td>" + cat_eight[m].examplecontenttemplate[0].picExampleMark + "</td></tr>"
+                        if (cat_eight[m].examplecontenttemplate[0].picExample) {
+                            tab_text = tab_text + "<td><img src= \"data:image/gif;base64," + cat_eight[m].examplecontenttemplate[0].picExample + "\" width = \"200\" height = \"150\"> </td>"
+                        }
+                        tab_text = tab_text + "<tr><td>" + cat_eight[m].examplecontenttemplate[0].txtExample + "</td></tr>"
+                        if (cat_eight[m].examplecontenttemplate[0].picA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)<br><img src= \"data:image/gif;base64," + cat_eight[m].examplecontenttemplate[0].picA + " \" width = \"100\" height = \"120\"><br>" + cat_eight[m].examplecontenttemplate[0].picAmark + " (B)<br><img src= \"data:image/gif;base64," + cat_eight[m].examplecontenttemplate[0].picB + " \" width = \"100\" height = \"120\"><br>" + cat_eight[m].examplecontenttemplate[0].picBmark + " (C)<br><img src= \"data:image/gif;base64," + cat_eight[m].examplecontenttemplate[0].picC + " \" width = \"100\" height = \"120\"><br>" + cat_eight[m].examplecontenttemplate[0].picCmark + "</td></tr>"
+                        }
+                        if (cat_eight[m].examplecontenttemplate[0].txtA) {
+                            tab_text = tab_text + "<tr><td>" + "(A)" + cat_eight[m].examplecontenttemplate[0].txtA + " (B)" + cat_eight[m].examplecontenttemplate[0].txtB + " (C)" + cat_eight[m].examplecontenttemplate[0].txtC + " (D)" + cat_eight[m].examplecontenttemplate[0].txtD + "</td></tr>"
+                        }
+                        tab_text = tab_text + "<tr><td><br>正確答案:" + cat_eight[m].examplecontenttemplate[0].answer + "</td></tr>"
+                        tab_text = tab_text + "</table>";
+
+                    }
+                    tab_text = tab_text.replace(/"([^"]*)"/g, "$1") //過濾引號
+                    tab_text = tab_text.replace(/null/g, "") //過濾null變空白
+                    var ua = window.navigator.userAgent;
+                    var msie = ua.indexOf("MSIE ");
+
+                    if (msie > 0 || !!navigator.userAgent.match(/Trident.*rv\:11\./))      // If Internet Explorer
+                    {
+                        txtArea1.document.open("txt/html", "replace");
+                        txtArea1.document.write(tab_text);
+                        txtArea1.document.close();
+                        txtArea1.focus();
+                        sa = txtArea1.document.execCommand("SaveAs", true, "Say Thanks to Sumit.xls");
+                    }
+                    else               //other browser not tested on IE 11
+                        var divContents = $("#dvContainer").html();
+                    var printWindow = window.open('', '', 'height=400,width=800');
+                    printWindow.document.write(tab_text);
+                    printWindow.document.close();
+                    printWindow.print();
+                    return;
+                },
+            });
+        }
+
+        function ShowTimer(date) {
+            var now = new Date();
+
+            var endDate = new Date(date);
+            endDate.setHours(endDate.getHours() + 2)
+            endDate.setSeconds(endDate.getSeconds())
+
+            var leftTime = endDate.getTime() - now.getTime();
+            // CountDownTimer(leftTime);
+            console.log("leftTime=" + leftTime);
+            var leftSecond = parseInt(leftTime / 1000);
+            console.log("leftSecond=" + leftSecond);
+            var day = Math.floor(leftSecond / (60 * 60 * 24));
+            console.log("day=" + day);
+            var hour = Math.floor((leftSecond - day * 24 * 60 * 60) / 3600);
+            console.log("hour=" + hour);
+            var minute = Math.floor((leftSecond - day * 24 * 60 * 60 - hour * 3600) / 60);
+
+            console.log("hour=" + hour);
+
+            var second = Math.floor(leftSecond - day * 24 * 60 * 60 - hour * 3600 - minute * 60);
+            console.log("second=" + second);
+
+
+            var htmlElement = $("#divId");
+            var html = "<span class='day'><b class='timer'>" + day + "</b>天</span>" +
+                "<span class='day'><b class='timer'>" + hour + "</b>时</span>" +
+                "<span class='day'><b class='timer'>" + minute + "</b>分</span>" +
+                "<span class='day'><b class='timer'>" + second + "</b>秒";
+            htmlElement.html(html);
+
+        }
+
+
+    </script>
+</head>
+
+
+<body>
+    <div class="tablesRows" id="Authorization"><a>目前無認證碼</a></div>
+    <div>
+        <div class="form-group word">
+            <label for="txtlevel">命題級數</label>
+            <select style="width:5%;" id="txtlevel">
+            </select>
+            <div id="divId" class="andy timer"></div>
+
+        </div>
+        <button class="btn btn-outline-danger btn-sm" id="Getauthentication" onclick="Getauthentication()"
+            style="width:149px;height: 30px;float:left">創建考場</button>
+        <button disabled="disabled" class="btn btn-outline-primary btn-sm" id="StratQuiz" onclick="StartQuiz()"
+            style="width:149px;height: 30px;">開始測驗</button>
+        <button class="btn btn-outline-primary btn-sm" onclick="fnWordReport()"
+            style="width:149px;height: 30px;">PDF</button>
+
+    </div>
+
+    <div>
+        <ul class="nav">
+            <li class="nav-item" style="background-color:rgb(227, 168, 235)" onclick="MakeExamRoom(0)">
+                <a href="#" class="nav-link active"><span data-feather="null"></span>1 (10) </a></li>
+            <li class="nav-item" style="background-color:rgb(227, 168, 235)" onclick="MakeExamRoom(1)">
+                <a href="#" class="nav-link active"><span data-feather="null"></span>2 (15)</a></li>
+            <li class="nav-item" style="background-color:rgb(227, 168, 235)" onclick="MakeExamRoom(2)">
+                <a href="#" class="nav-link active"><span data-feather="null"></span>3 (15)</a></li>
+            <li class="nav-item" style="background-color:rgb(227, 168, 235)" onclick="MakeExamRoom(3)">
+                <a href="#" class="nav-link active"><span data-feather="null"></span>4 (10)</a></li>
+            <li class="nav-item " style="background-color:gainsboro" onclick="MakeExamRoom(4)">
+                <a href="#" class="nav-link"><span data-feather="null"></span>5 (15)</a></li>
+            <li class="nav-item" style="background-color:gainsboro" onclick="MakeExamRoom(5)">
+                <a href="#" class="nav-link"><span data-feather="null"></span>6 (15)</a></li>
+            <li class="nav-item " style="background-color:gainsboro" onclick="MakeExamRoom(6)">
+                <a href="#" class="nav-link"><span data-feather="null"></span>7 (5)</a></li>
+            <li class="nav-item " style="background-color:gainsboro" onclick="MakeExamRoom(7)">
+                <a href="#" class="nav-link"><span data-feather="null"></span>8 (10)</a></li>
+            <li class="nav-item" style="background-color:gainsboro" onclick="MakeExamRoom(8)">
+                <a href="#" class="nav-link"><span data-feather="null"></span>9 (5)</a></li>
+
+        </ul>
+
+    </div>
+
+
+
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <table id="ExamTable" class="word able table-striped table-sm" style="width:100%; ">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>groupId</th>
+                <th>命題學校</th>
+                <th>狀態</th>
+                <th>題號</th>
+                <th>命題級數</th>
+                <th>題目類別</th>
+                <th>來源教材</th>
+                <th>冊數</th>
+                <th>課數</th>
+                <th>領域主題</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+
+    <!-- Detail -->
+    <div class="modal fade" id="modalRecord" tabindex="-1" role="dialog" aria-labelledby="modalRecordLabel"
+        aria-hidden="true" style="font-size:0.8em;">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRecordLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table id="DetailExampleContent" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>examId</th>
+                                <th>題目內容</th>
+                                <th>題目圖檔</th>
+                                <th>題目音檔</th>
+                                <th>A文字</th>
+                                <th>A圖檔</th>
+                                <th>A音檔</th>
+                                <th>B文字</th>
+                                <th>B圖檔</th>
+                                <th>B音檔</th>
+                                <th>C文字</th>
+                                <th>C圖檔</th>
+                                <th>C音檔</th>
+                                <th>D文字</th>
+                                <th>E文字</th>
+                                <th>F文字</th>
+                                <th>answer</th>
+                                <th>picexamplemark</th>
+                                <th>voiceexamplemark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picCmark</th>
+                                <th>voiceCmark</th>
+                            </tr>
+
+                        </thead>
+                    </table>
+                    <table id="DetailExample" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>命題級數</th>
+                                <th>題目類別</th>
+                                <th>來源教材</th>
+                                <th>冊數</th>
+                                <th>課數</th>
+                                <th>領域主題</th>
+                                <th>題組內容</th>
+                                <th>題組圖檔</th>
+                                <th>題組音檔</th>
+                                <th>picexamplegroupmark</th>
+                                <th>voiceexamplegroupmark</th>
+
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 模態框（Modal） -->
+    <div class="modal fade" id="searchModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <a>題目創建中請稍後...</a>
+                    <div class="progress">
+                        <div id="pbar" class="progress-bar progress-bar-striped bg-info progress-bar-animated"
+                            role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                            style="width: 75%">0%</div>
+                    </div>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal -->
+    </div>
+
+    <div class="word  modal fade modal_right" id="EditModal1" tabindex="-1" role="dialog"
+        aria-labelledby="modalEditLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="word modal-title" id="modalEditLabel">編輯考題</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <button style="font-size:1.2em;" type="button" class="btn btn-primary btn-sm modal-button"
+                    onclick="showReferenceModal();">題目範例</button>
+                <div id="Edit1-modal-panel"></div>
+            </div>
+        </div>
+    </div>
+    <div class="word  modal fade modal_right" id="EditModal2" tabindex="-1" role="dialog"
+        aria-labelledby="modalEditLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:28em;" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="word modal-title" id="modalEditLabel2">編輯考題</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <button style="font-size:1.2em;" type="button" class="btn btn-primary btn-sm modal-button"
+                    onclick="showReferenceModal();">題目範例</button>
+                <div id="Edit2-modal-panel"></div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+
+    </script>
+</body>
+
+</html>

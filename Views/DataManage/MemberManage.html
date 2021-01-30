@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>進階會員管理系統</title>
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <script>
+        var dataTables;
+        $(document).ready(function () {
+            dataTables = $('#memberManageTable').DataTable({
+                "lengthMenu": [[10, 20, 30], [10, 20, 30]],
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/mm/getall",
+                    contentType: "application/json",
+                    data: function (d) { // change request attribute to json format
+                        return JSON.stringify(d)
+                    }
+                },
+                "columns": [ // load data from API
+                    { 'data': 'id' },
+                    { 'data': 'status' },
+                    { 'data': 'language' },
+                    { 'data': 'login' },
+                    { 'data': 'nickname' },
+                    { 'data': 'nation' },
+                    { 'data': 'point1' },
+                    { 'data': 'type' },
+                    { 'data': null }
+                ],
+                "columnDefs": [{ // customize column
+                    "targets": 1, // add enable / disable function
+                    "render": function (data, type, row) {
+                        var checked = (data == "X" ? "啟用" : "停用");
+                        return "<a href='javascript:void(0);' onclick='changeStatus(" + row.id + ",\"" + data + "\", \"" + checked + "\");'>" + checked + "</a>";
+                    }
+                }, {
+                    "targets": 2, // generate dropdown list from data
+                    "render": function (data, type, row) {
+                        return languageData[parseInt(data)];
+                    }
+                }, {
+                    "targets": 7, // generate dropdown list from data
+                    "render": function (data, type, row) {
+                        return memberTypeData[data];
+                    }
+                }, {
+                    "targets": 8, // add edit button
+                    "render": function (data, type, row) {
+                        return '<a href="javascript:void(0);" onclick="editMember(' + row.id + ',\'' + row.login + '\')">編輯</a>';
+                    }
+                }, {
+                    "targets": [0], // hidden column
+                    "visible": false
+                }],
+                "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+                "language": { // change display text
+                    "info": " 目前顯示 _START_ 至 _END_ 筆，共計 _TOTAL_ 筆。",
+                    "paginate": {
+                        "first": "第一頁",
+                        "last": "最後一頁",
+                        "next": ">",
+                        "previous": "<"
+                    },
+                }
+            });
+            $("div.toolbar").html('<button class="btn btn-outline-primary btn-sm" onclick="createMember()">建立帳號</button>'); // get dom from toolbar
+
+        });
+        /// Function 
+        function changeStatus(id, msg) { // 變更狀態
+            var confirmStatus = confirm("是否" + msg + "?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/mm/turnstatus",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "id": id
+                    }),
+                    success: function () {
+                        dataTables.draw();
+                    }
+                });
+            }
+        }
+
+        function createMember() { // 建立會員初始化
+            $.each(memberTypeData, function (key, value) { // generate dropdown list from memberData.js 
+                $("#selTypeCreate").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $.each(languageData, function (key, value) { // generate dropdown list from memberData.js
+                $("#selLanguageCreate").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $('#modalCreate').modal('show');
+        }
+
+        function createMemberCommit() { // 建立會員送出
+            if($('#txtPasswordCreate').val() != $('#txtConfirmPasswordCreate').val()) return alert("密碼不符");
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/mm/create",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'login': $('#txtLoginCreate').val(),
+                    'password': $('#txtPasswordCreate').val(),
+                    'confirmPassword': $('#txtConfirmPasswordCreate').val(),
+                    'nickname': $('#txtNicknameCreate').val(),
+                    'point1': $('#numPointCreate').val(),
+                    'nation': $('#txtDescriptionCreate').val(),
+                    'type': $("#selTypeCreate").val(),
+                    'language': $("#selLanguageCreate").val()
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#modalCreate').modal('hide');
+                }
+            });
+        }
+
+        function editMember(id, login) { // 編輯會員初始化
+            $('#memberId').html(id);
+            $('#modalEditLabel').html('編輯 ' + login);
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/mm/getbyid",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "id": id
+                }),
+                success: function (result) {
+                    $("#selTypeEdit").empty();
+                    $("#selLanguageEdit").empty();
+                    $('#txtId').val(result.id);
+                    $('#txtNicknameEdit').val(result.nickname);
+                    $('#numPointEdit').val(result.point1);
+                    $('#txtDescriptionEdit').val(result.nation);
+                    $.each(memberTypeData, function (key, value) { // generate dropdown list from memberData.js 
+                        if (key == result.type) {
+                            $("#selTypeEdit").append('<option selected="selected" value=' + key + '>' + value + '</option>')
+                        } else {
+                            $("#selTypeEdit").append('<option value=' + key + '>' + value + '</option>');
+                        }
+                    });
+                    $.each(languageData, function (key, value) { // generate dropdown list from memberData.js
+                        if (key == result.language) {
+                            $("#selLanguageEdit").append('<option selected="selected" value=' + key + '>' + value + '</option>');
+                        } else {
+                            $("#selLanguageEdit").append('<option value=' + key + '>' + value + '</option>');
+                        }
+                    });
+                }
+            });
+            $('#modalEdit').modal('show');
+        }
+        function editMemberCommit() { // 編輯會員送出
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/mm/update",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'id': $('#txtId').val(),
+                    'nickname': $('#txtNicknameEdit').val(),
+                    'point1': $('#numPointEdit').val(),
+                    'nation': $('#txtDescriptionEdit').val(),
+                    'type': $("#selTypeEdit").val(),
+                    'language': $("#selLanguageEdit").val()
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#modalEdit').modal('hide');
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <!-- DataTables -->
+    <table id="memberManageTable" class="table table-striped table-sm" style="width:100%; font-size: 0.9em;">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>狀態</th>
+                <th>語言</th>
+                <th>帳號</th>
+                <th>顯示名稱</th>
+                <th>備註</th>
+                <th>點數</th>
+                <th>會員類型</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+    <!-- Modal: Edit -->
+    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="selType">會員類型</label>
+                        <input type="hidden" class="form-control form-control-sm" id="txtId">
+                        <select class="form-control form-control-sm" id="selTypeEdit">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="selLanguageEdit">預設語言</label>
+                        <select class="form-control form-control-sm" id="selLanguageEdit">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtNicknameEdit">顯示名稱</label>
+                        <input type="text" class="form-control form-control-sm" id="txtNicknameEdit"
+                            placeholder="例如: 小明">
+                    </div>
+                    <div class="form-group">
+                        <label for="numPointEdit">點數</label>
+                        <input type="number" class="form-control form-control-sm" id="numPointEdit" placeholder="300">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtDescriptionEdit">備註</label>
+                        <input type="text" class="form-control form-control-sm  " id="txtDescriptionEdit"
+                            placeholder="填寫說明">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="editMemberCommit();">修改存檔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Create -->
+    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCreateLabel">Create</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txtLoginCreate">會員帳號</label>
+                        <input type="email" class="form-control form-control-sm" id="txtLoginCreate" placeholder="例如: example@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtPasswordCreate">會員密碼</label>
+                        <input type="password" class="form-control form-control-sm" id="txtPasswordCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtConfirmPasswordCreate">確認密碼</label>
+                        <input type="password" class="form-control form-control-sm" id="txtConfirmPasswordCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="selTypeCreate">會員類型</label>
+                        <select class="form-control form-control-sm" id="selTypeCreate">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="selLanguageCreate">預設語言</label>
+                        <select class="form-control form-control-sm" id="selLanguageCreate">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtNicknameCreate">顯示名稱</label>
+                        <input type="text" class="form-control form-control-sm" id="txtNicknameCreate"
+                            placeholder="例如: 小明">
+                    </div>
+                    <div class="form-group">
+                        <label for="numPointCreate">點數</label>
+                        <input type="number" class="form-control form-control-sm" id="numPointCreate" placeholder="300">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtDescriptionCreate">備註</label>
+                        <input type="text" class="form-control form-control-sm" id="txtDescriptionCreate"
+                            placeholder="填寫說明">
+                    </div>
+                    <div id="memberId"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="createMemberCommit();">新增會員</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+</body>
+
+</html>

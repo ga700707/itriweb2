@@ -1,0 +1,203 @@
+<head>
+        <script>
+            $(document).ready(function () {
+    
+                $("#levelEdit").empty();
+                $.each(LevelData, function (key, value) { // generate dropdown list from memberData.js 
+                    $("#levelEdit").append('<option value=' + key + '>' + value + '</option>');
+                });
+                switch (parseInt($("#txtlevel").val())) {
+                    case 0:
+                    case 1:
+                        $.each(CategoryA, function (key, value) { // generate dropdown list from memberData.js 
+                            $("#categoryEdit").append('<option value=' + key + '>' + value + '</option>');
+                        });
+    
+                        break;
+                    case 2:
+                    case 3:
+                        $.each(CategoryB, function (key, value) { // generate dropdown list from memberData.js 
+                            $("#categoryEdit").append('<option value=' + key + '>' + value + '</option>');
+                        });
+                        break;
+                    case 4:
+                    case 5:
+                        $.each(CategoryC, function (key, value) { // generate dropdown list from memberData.js 
+                            $("#categoryEdit").append('<option value=' + key + '>' + value + '</option>');
+                        });
+    
+                        break;
+                }
+                $.each(TextBookData, function (key, value) { // generate dropdown list from memberData.js 
+                    $("#referenceEdit").append('<option value=' + key + '>' + value + '</option>');
+                });
+    
+                $.each(ThemeData, function (key, value) { // generate dropdown list from memberData.js 
+                    $("#themeEdit").append('<option value=' + key + '>' + value + '</option>');
+                });
+                $("#levelEdit").val($("#txtlevel").val());
+                $("#categoryEdit").val($("#txtcategory").val());
+            });
+    
+            function PicCheck(sender) {
+                var validExts = new Array(".jpg");
+                var fileExt = sender.value;
+                fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+                if (validExts.indexOf(fileExt) < 0) {
+                    alert("檔案類型錯誤，可接受的副檔名有：" + validExts.toString());
+                    sender.value = null;
+                    return false;
+                }
+                else
+                    return true;
+            }
+            $(function () {
+                $("#Edit1-modal-panel").find("img").each(function () {
+    
+                    if ($(this)[0].src == window.location.href + '#')
+                        $(this).attr("src", "/res/img/upload_image.png");
+                });
+    
+                $("#levelEdit").change(function () {
+    
+                    $("#txtlevel").val($("#levelEdit").val());
+                    $("#categoryEdit").empty();
+                    $("#txtcategory").empty();
+                    switch (parseInt($("#txtlevel").val())) {
+                        case 0:
+                        case 1:
+                            $.each(CategoryA, function (key, value) { // generate dropdown list from memberData.js 
+                                $("#categoryEdit").append('<option value=' + key + '>' + value + '</option>');
+                                $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+    
+                            });
+    
+                            break;
+                        case 2:
+                        case 3:
+                            $.each(CategoryB, function (key, value) { // generate dropdown list from memberData.js 
+                                $("#categoryEdit").append('<option value=' + key + '>' + value + '</option>');
+                                $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+    
+                            });
+                            break;
+                        case 4:
+                        case 5:
+                            $.each(CategoryC, function (key, value) { // generate dropdown list from memberData.js 
+                                $("#categoryEdit").append('<option value=' + key + '>' + value + '</option>');
+                                $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+    
+                            });
+    
+                            break;
+                    }
+                    $("#categoryEdit").val(0);
+                    $("#txtcategory").val($("#categoryEdit").val());
+                    InitModal();
+                });
+                $("#categoryEdit").change(function () {
+                    $("#txtcategory").val($("#categoryEdit").val());
+                    InitModal();
+                });
+                $("#UploadpicExampleGroupEdit").change(function () {
+                    if (PicCheck(this)) {
+                        var objUrl = getObjectURL(this.files[0]);
+                        console.log(this.files[0]);
+                        if (this.files.length != 0) {
+                            $("#picExampleGroupEdit").attr("src", objUrl);
+                            $("#picExampleGroupEdit").show();
+                        }
+                    }
+                });
+            }); 
+        </script>
+    
+    </head>
+<style>
+    textarea {
+        border: 0;
+        overflow-y: auto;
+        /* IE */
+        resize: none;
+        /* Firefox, Chrome */
+    }
+
+    .btn-image {
+        background-color: #D4D4D4;
+    }
+</style>
+<!-- Modal: EditExam -->
+
+<div id="modalEdit">
+    <div class="modal-body">
+
+
+        <div class="form-group row">
+            <input type="hidden" class="form-control form-control-sm col-sm-8" id="txtidEdit">
+        </div>
+        <div class="form-group row ">
+            <label class="col-sm-3" for=" numberEdit">題目序號</label>
+            <input type="text" class="form-control form-control-sm col-sm-8" id="numberEdit">
+            </input>
+        </div>
+        <div class="form-group row ">
+            <label class="col-sm-3" for=" propositionEdit">命題者</label>
+            <input type="text" class="form-control form-control-sm col-sm-8" id="propositionEdit">
+            </input>
+        </div>
+        <div class="form-group row ">
+            <label class="col-sm-3" for=" levelEdit">命題級數</label>
+            <select type="text" class="form-control form-control-sm col-sm-8" id="levelEdit">
+            </select>
+        </div>
+        <div class="form-group row ">
+            <label class="col-sm-3" for=" categoryEdit">題目類別</label>
+            <select type="text" class="form-control form-control-sm col-sm-8" id="categoryEdit">
+            </select>
+        </div>
+
+        <div class="form-group row">
+            <label class="col-sm-3" for=" referenceEdit">來源教材</label>
+            <select type="text" class="form-control form-control-sm col-sm-8" id="referenceEdit">
+            </select>
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-3"" for=" themeEdit">領域主題</label>
+            <select type="text" class="form-control form-control-sm col-sm-8" id="themeEdit"></select>
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-3"" for=" volumeEdit">冊數</label>
+            <input type="text" class="form-control form-control-sm col-sm-8" placeholder="請輸入1~10" id="volumeEdit">
+
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-3"" for=" classEdit">課數</label>
+            <input type="text" class="form-control form-control-sm col-sm-8" placeholder="請輸入1~3或5~7或6"
+                id="classEdit">
+        </div>
+        <div class="form-group ">
+            <label class="row col-sm-10" for="txtExampleGroupEdit">題組題目文字</label>
+            <textarea type="text" rows="4" class="form-control form-control-sm  col-sm-12"
+                id="txtExampleGroupEdit"></textarea>
+        </div>
+
+        
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" voiceExampleGroupEdit">題組題目音檔</label>
+                <audio class="col-sm-5" id="voiceExampleGroupEdit" controls="" style="width:100px;""></audio>
+                            <label class=" col-sm-3 btn-outline-light btn-voice">
+                    <input accept=".mp3" id="UploadvoiceExampleGroupEdit" style="display:none;" type="file">
+                    Upload
+                    </label>
+            </div>
+            <textarea id="voiceExampleGroupMarkEdit" placeholder="題組題目音檔備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+        <button id="EditNextPageBtn" type="button" class="btn btn-primary btn-sm"
+            onclick="EditNextPage();">下一頁</button>
+    </div>
+</div>

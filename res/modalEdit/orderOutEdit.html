@@ -1,0 +1,217 @@
+
+<head>
+	<!-- <link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/bootstrap-material-design.min.css" /> -->
+	<link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/ripples.min.css" />
+
+	<link rel="stylesheet"
+		href="/bootstrap-material-datetimepicker-gh-pages/css/bootstrap-material-datetimepicker.css" />
+	<link href='http://fonts.googleapis.com/css?family=Roboto:400,500' rel='stylesheet' type='text/css'>
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/ripples.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/material.min.js"></script>
+	<!-- <script type="text/javascript"
+		src="https://rawgit.com/FezVrasta/bootstrap-material-design/master/dist/js/material.min.js"></script> -->
+	<script type="text/javascript" src="http://momentjs.com/downloads/moment-with-locales.min.js"></script>
+	<script type="text/javascript"
+		src="/bootstrap-material-datetimepicker-gh-pages/js/bootstrap-material-datetimepicker.js"></script>
+	<script>
+		$(document).ready(function () {
+			$('#oOrderImageEdit').attr("src", "/res/img/upload_image.png");
+
+		});
+		function getURL(file) {
+            var url = null;
+            if (window.EditObjectURL != undefined) { // basic  
+                url = window.EditObjectURL(file);
+            } else if (window.URL != undefined) { // mozilla(firefox)  
+                url = window.URL.EditObjectURL(file);
+            } else if (window.webkitURL != undefined) { // webkit or chrome  
+                url = window.webkitURL.EditObjectURL(file);
+            }
+            return url;
+        }
+		function PicCheck(sender) {
+            var validExts = new Array(".jpg");
+            var fileExt = sender.value;
+            console.log(fileExt);
+            fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+            if (validExts.indexOf(fileExt) < 0) {
+                alert("檔案類型錯誤，可接受的副檔名有：" + validExts.toString());
+                sender.value = null;
+                return false;
+            }
+            else
+                return true;
+        }
+		$(function () {
+			$("#UploadoOrderImageEdit").change(function () {
+                 if (PicCheck(this)) {
+                    var objUrl = getURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#oOrderImageEdit").attr("src", objUrl);
+                        $("#oOrderImageEdit").show();
+                    }
+                }
+            });
+			$('#date').bootstrapMaterialDatePicker
+				({
+					time: false,
+					clearButton: true
+				});
+
+			$('#time').bootstrapMaterialDatePicker
+				({
+					date: false,
+					shortTime: false,
+					format: 'HH:mm'
+				});
+
+			$('#date-format').bootstrapMaterialDatePicker
+				({
+					format: 'dddd DD MMMM YYYY - HH:mm'
+				});
+			$('#date-fr').bootstrapMaterialDatePicker
+				({
+					format: 'DD/MM/YYYY HH:mm',
+					lang: 'tw',
+					weekStart: 1,
+					cancelText: 'ANNULER',
+					nowButton: true,
+					switchOnClick: true
+				});
+
+			$('#oOrderPredictDateEdit').bootstrapMaterialDatePicker
+				({
+					weekStart: 0, format: 'YYYY/MM/DD HH:mm'
+				});
+
+			$('#oOrderCompleteDateEdit').bootstrapMaterialDatePicker
+				({
+					weekStart: 0, format: 'YYYY/MM/DD HH:mm', shortTime: true
+				})
+		
+			$('#min-date').bootstrapMaterialDatePicker({ format: 'YYYY/MM/DD HH:mm', minDate: new Date() });
+
+			$.material.init()
+		}); 
+	</script>
+
+</head>
+<div class="container">
+	<div class="row text-center">
+		<div class="col-12">
+		</div>
+		<dvi class="container h-120">
+
+			<!-- left frame -->
+
+			<div class="d-flex justify-content-center">
+				<div class="card mt-8 col-12 animated bounceInDown myForm">
+					<div class="card-header">
+						<h4>加工單(外包)-編輯頁面</h4>
+					</div>
+					<div class="card-body">
+						<form name="build">
+							<div id="dynamic_container">
+								<!-- 
+								指定歸屬訂單編號
+								承包商
+								預估完工日期
+								實際完工日期 
+								public int Id { get; set; }
+								public string OOrderContractor { get; set; }
+								public DateTime? OOrderPredictDate { get; set; }
+								public DateTime? OOrderCompleteDate { get; set; }
+								-->
+								<div class="form-group row">
+									<input type="hidden" class="form-control form-control-sm col-sm-8"
+										id="oOrderIdEdit">
+								</div>
+								<div>指定歸屬工單編號</div>
+								<div class="input-group">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div> -->
+									<input disabled="disabled" type="text" placeholder="" id="oGonNoEdit"  class="form-control"></input>
+								</div>
+								<!-- 這裡的訂單編號要用資料庫裡的pOrder去做外部鍵關聯 -->
+								<div>指定圖檔</div>
+								<div class="input-group">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div> -->
+									<!-- <input type="text" placeholder="" id="oOrderImageEdit" name="oOrderImage" class="form-control" /> -->
+									<label class="btn-sm btn-outline-light btn-image">
+										<img class="img-rounded" src="#" id="oOrderImageEdit" width="75" height="75" />
+										<input accept=".jpg" id="UploadoOrderImageEdit" name="oOrderImage" class="form-control"  style="display:none;" type="file">
+									</label>
+								</div>
+								
+								<div>製程編排</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="oOrderScheduleEdit" name="oOrderSchedule"
+										class="form-control" />
+								</div>
+								<div>製程工法</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="oOrderMethodEdit" name="oOrderMethod" class="form-control" />
+								</div>
+								<div>承包商</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="oOrderContractorEdit" name="oOrderContractor"
+										class="form-control" />
+								</div>
+								<div>預估完工日期</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="oOrderPredictDateEdit" name="oOrderPredictDate" class="form-control" />
+								</div>
+								<div>實際完工日期</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="oOrderCompleteDateEdit" name="oOrderCompleteDate" class="form-control" />
+								</div>
+
+							</div>
+					</div>
+					<div class="card-footer">
+						<!-- <div>時間</div>
+						<div class="input-group mt-3" style="width:120px;float:left;margin:20px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="起始" class="form-control" />
+						</div>
+						<div class="input-group mt-3" style="width:120px;margin:10px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="結束" class="form-control" />
+						</div> -->
+					</div>
+					<input type="button" style="color:#ffffff;" class="btn btn-success btn-lg float-right submit_btn" value="儲存"
+						onclick="orderOutEditContent()" />
+					</form>
+				</div>
+
+
+			</div>
+	</div>
+</div>

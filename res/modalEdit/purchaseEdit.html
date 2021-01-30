@@ -1,0 +1,168 @@
+<head>
+	<!-- <link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/bootstrap-material-design.min.css" /> -->
+	<link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/css/ripples.min.css" />
+
+	<link rel="stylesheet"
+		href="/bootstrap-material-datetimepicker-gh-pages/css/bootstrap-material-datetimepicker.css" />
+	<link href='http://fonts.googleapis.com/css?family=Roboto:400,500' rel='stylesheet' type='text/css'>
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/ripples.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.5.10/js/material.min.js"></script>
+	<!-- <script type="text/javascript"
+		src="https://rawgit.com/FezVrasta/bootstrap-material-design/master/dist/js/material.min.js"></script> -->
+	<script type="text/javascript" src="http://momentjs.com/downloads/moment-with-locales.min.js"></script>
+	<script type="text/javascript"
+		src="/bootstrap-material-datetimepicker-gh-pages/js/bootstrap-material-datetimepicker.js"></script>
+	<script>
+		$(document).ready(function () {
+
+		});
+
+
+		$(function () {
+			$('#date').bootstrapMaterialDatePicker
+				({
+					time: false,
+					clearButton: true
+				});
+
+			$('#time').bootstrapMaterialDatePicker
+				({
+					date: false,
+					shortTime: false,
+					format: 'HH:mm'
+				});
+
+			$('#date-format').bootstrapMaterialDatePicker
+				({
+					format: 'dddd DD MMMM YYYY - HH:mm'
+				});
+			$('#date-fr').bootstrapMaterialDatePicker
+				({
+					format: 'DD/MM/YYYY HH:mm',
+					lang: 'tw',
+					weekStart: 1,
+					cancelText: 'ANNULER',
+					nowButton: true,
+					switchOnClick: true
+				});
+
+			$('#purchaseOrderPredictDateEdit').bootstrapMaterialDatePicker
+				({
+					weekStart: 0, format: 'YYYY/MM/DD HH:mm'
+				});
+
+			$('#purchaseOrderCompleteDateEdit').bootstrapMaterialDatePicker
+				({
+					weekStart: 0, format: 'YYYY/MM/DD HH:mm', shortTime: true
+				})
+
+			$('#min-date').bootstrapMaterialDatePicker({ format: 'YYYY/MM/DD HH:mm', minDate: new Date() });
+
+			$.material.init()
+		}); 
+	</script>
+
+</head>
+
+<div class="container">
+	<div class="row text-center">
+		<div class="col-12">
+		</div>
+		<dvi class="container h-120">
+
+			<!-- left frame -->
+
+			<div class="d-flex justify-content-center">
+				<div class="card mt-8 col-12 animated bounceInDown myForm">
+					<div class="card-header">
+						<h4>採購單-編輯頁面</h4>
+					</div>
+					<div class="card-body">
+						<form name="build">
+							<div id="dynamic_container">
+								<!-- 
+								指定歸屬訂單編號
+								項目清單
+								負責人編號
+								預估交貨日期
+								實際交貨日期 
+								public int Id { get; set; }
+								public string PurchaseOrderList { get; set; }
+								public int? PurchaseOrderMemberName { get; set; }
+								public DateTime? PurchaseOrderPredictDate { get; set; }
+								public DateTime? PurchaseOrderCompleteDate { get; set; }
+							-->
+								<div class="form-group row">
+									<input type="hidden" class="form-control form-control-sm col-sm-8"
+										id="purchaseOrderIdEdit">
+								</div>
+								<div>指定歸屬工單編號</div>
+								<div class="input-group">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div> -->
+									<input disabled="disabled" type="text" placeholder="" id="pGonNoEdit"
+										class="form-control"></input>
+								</div>
+								<div>項目清單</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="purchaseOrderListEdit"
+										name="purchaseOrderList" class="form-control" />
+								</div>
+								<div>負責人編號</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<select type="text" placeholder="" id="purchaseOrderMemberNameEdit"
+										name="purchaseOrderMemberName" class="form-control" />
+								</div>
+								<div>預估交貨日期</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="purchaseOrderPredictDateEdit"
+										name="purchaseOrderPredictDate" class="form-control" />
+								</div>
+								<div>實際交貨日期</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="purchaseOrderCompleteDateEdit"
+										name="purchaseOrderCompleteDate" class="form-control" />
+								</div>
+							</div>
+					</div>
+					<div class="card-footer">
+						<!-- <div>時間</div>
+						<div class="input-group mt-3" style="width:120px;float:left;margin:20px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="起始" class="form-control" />
+						</div>
+						<div class="input-group mt-3" style="width:120px;margin:10px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="結束" class="form-control" />
+						</div> -->
+					</div>
+					<input type="button" style="color:#ffffff;" class="btn btn-success btn-lg float-right submit_btn"
+						value="儲存" onclick="purchase2EditContent()" />
+					</form>
+				</div>
+
+
+			</div>
+	</div>
+</div>

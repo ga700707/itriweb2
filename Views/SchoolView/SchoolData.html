@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>合作廠商管理系統</title>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <script>
+        var dataTables;
+        $(document).ready(function () {
+            dataTables = $('#SChoolTable').DataTable({
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/school/GetAll",
+                    contentType: "application/json",
+                    data: function (d) {
+                        return JSON.stringify(d)
+                    }
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'status' },
+                    { 'data': 'name' },
+                    { 'data': 'studentNumber' },
+                    { 'data': 'useNumber' },
+                    { 'data': 'createDate' }, //5
+                    { 'data': 'modifyDate' },
+                    { 'data': null }
+                ], "columnDefs": [{
+                    "targets": [0], // hidden column
+                    "visible": false
+                }, {
+                    "targets": 1,
+                    "render": function (data, type, row) {
+                        var checked = (row.status == 0) ? "啟用" : "停用";
+                        return "<a href='javascript:void(0);' onclick='changeStatus(" + row.id + ",\"" + checked + row.name + "\", \"" + checked + "\");'>" + checked + "</a>";
+                    }
+
+                }, {
+                    "targets": 7, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        var html = "";
+                        html += '<a href="javascript:void(0);" onclick="DetailObject(' + row.id + ')">詳細</a> '
+                        html += '| <a href="javascript:void(0);" onclick="editAccount(' + row.id + ',\'' + row.name + '\')">編輯</a>'
+                        html += ' | <a href="javascript:void(0);" onclick="DeleteAccount(' + row.id + ')">刪除</a> '
+                        return html
+                    }
+                }, {
+                    "targets": [5, 6], render: function (data) {
+                        if (data == null)
+                            return "無";
+                        else {
+                            var dateOrigin = new Date(data)
+                            dateOrigin.setHours(dateOrigin.getHours() + 8)
+                            return moment(dateOrigin).format('YYYY-MM-DD hh:mm:ss');
+                        }
+                    }
+                }],
+                "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+                "language": { // change display text
+                    "info": " 目前顯示 _START_ 至 _END_ 筆，共計 _TOTAL_ 筆。",
+                    "paginate": {
+                        "first": "第一頁",
+                        "last": "最後一頁",
+                        "next": ">",
+                        "previous": "<"
+                    }
+                }
+
+            });
+            $("div.toolbar").html('<button class="btn btn-outline-primary btn-sm" onclick="createAccount()">建立學校帳號</button>'); // get dom from toolbar
+            $('#txtCreateDateEdit').datepicker({ format: 'yyyy-mm-dd' });
+        });
+        function DeleteAccount(id, msg) { // 變更狀態
+            var confirmStatus = confirm("是否刪除此帳號?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/school/Delete",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "id": id
+                    }),
+                    success: function () {
+                        dataTables.draw();
+                    }
+                });
+            }
+        }
+        function changeStatus(id, msg) { // 變更狀態
+            var confirmStatus = confirm("是否" + msg + "?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/school/TurnStatus",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "id": id
+                    }),
+                    success: function () {
+                        dataTables.draw();
+                    }
+                });
+            }
+        }
+        /// Function 
+        function DetailObject(id) {
+            $('#AMDetail').DataTable({
+                "destroy": true,
+                "lengthChange": false,
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/school/GetAllComment/",
+                    contentType: "application/json",
+                    data: function (d) { // change request attribute to json format
+                        d.objectId = id;
+                        return JSON.stringify(d)
+                    }
+                },
+                "columns": [ // load data from API
+                    { 'data': 'id' },
+                    { 'data': 'objectId' },
+                    { 'data': 'contents' },
+                    { 'data': 'createDate' },
+                    { 'data': 'modifyDate' },
+                    { 'data': 'linkId' },
+                    { 'data': 'link' },
+                    { 'data': 'object' },
+                ], "columnDefs": [{
+                    "targets": [0, 1, 5, 6, 7], // hidden column
+                    "visible": false
+                }, {
+                    "targets": [2],
+                    "render": function (data, type, row) {
+                        return data.substr(0, 32) + "...";
+                    }
+                }]
+            });
+            $('#modalRecord').modal('show');
+        }
+        function createAccount() { // 建立會員初始化
+            $.each(memberTypeData, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txttypeCreate").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $("#txtstatusCreate").append('<option value="1">啟用</option>');
+            $("#txtstatusCreate").append('<option value="0">停用</option>');
+            $("#txtstudentNumberCreate").val(0);
+            $("#txtuseNumberCreate").val(0);
+            $('#modalCreate').modal('show');
+        }
+        function createAccountCommit() { // 建立初始化
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/school/Create",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'name': $('#txtnameCreate').val(),
+                    'status': $('#txtstatusCreate').val(),
+                    'studentNumber': $('#txtstudentNumberCreate').val(),
+                    'useNumber': $('#txtuseNumberCreate').val(),
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#modalCreate').modal('hide');
+                }
+
+            })
+            $('#modalCreate').modal('show');
+        }
+        function editAccount(id, title) { // 編輯會員初始化
+            $('#modalEditLabel').html('編輯 ' + title);
+            $.each(memberTypeData, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txttypeEdit").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $("#txtstatusEdit").append('<option value="1">啟用</option>');
+            $("#txtstatusEdit").append('<option value="0">停用</option>');
+            $("#txtstudentNumberEdit").val(0);
+            $("#txtuseNumberEdit").val(0);
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/school/GetById",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "id": id
+                }),
+                success: function (e) {
+                    console.log(e.status);
+                    $("#txtidEdit").val(id);
+                    $('#txtnameEdit').val(e.name);
+                    $('#txtstatusEdit').val("1");
+                    $('#txtstudentNumberEdit').val(e.studentNumber);
+                    $('#txtuseNumberEdit').val(e.useNumber);
+                }
+            });
+            $('#modalEdit').modal('show');
+
+        }
+        function editAccountCommit() { // 編輯會員送出
+            console.log($('#txtloginEdit').val());
+            console.log($("#txtidEdit").val())
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/school/Update",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'Id': $("#txtidEdit").val(),
+                    'Name': $("#txtnameEdit").val(),
+                    'Status': $("#txtstatusEdit").val(),
+                    'StudentNumber': $("#txtstudentNumberEdit").val(),
+                    'UseNumber': $("#txtuseNumberEdit").val(),
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#modalEdit').modal('hide');
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <!-- DataTables -->
+    <table id="SChoolTable" class="table table-striped table-sm" style="width:100%; font-size: 0.9em;">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>狀態</th>
+                <th>學校名稱</th>
+                <th>學生人數</th>
+                <th>使用數量</th>
+                <th>創建日期</th>
+                <th>修改日期</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+
+    <!-- Detail -->
+    <div class="modal fade" id="modalRecord" tabindex="-1" role="dialog" aria-labelledby="modalRecordLabel"
+        aria-hidden="true" style="font-size:0.8em;">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRecordLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table id="AMDetail" class="table table-striped table-sm" style="width:100%; font-size: 0.9em;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>objectId</th>
+                                <th>回文內容</th>
+                                <th>創建日期</th>
+                                <th>修改日期</th>
+                                <th>linkId</th>
+                                <th>link</th>
+                                <th>object</th>
+
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Edit -->
+    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <input type="hidden" class="form-control form-control-sm" id="txtidEdit">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="txtnameEdit">學校名稱</label>
+                        <input type="text" class="form-control form-control-sm" id="txtnameEdit">
+                    </div>
+
+
+
+                    <div class="form-group">
+                        <label for="txtstatusEdit">狀態</label>
+                        <select class="form-control form-control-sm" id="txtstatusEdit">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtstudentNumberEdit">學生人數</label>
+                        <input type="text" class="form-control form-control-sm" id="txtstudentNumberEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtuseNumberEdit">使用數量</label>
+                        <input type="text" class="form-control form-control-sm" id="txtuseNumberEdit">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="editAccountCommit();">修改存檔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Create -->
+    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                    <h5 class="modal-title" id="modalCreateLabel" 新增學校帳號</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                </div>
+
+
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <label for="txtnameCreate">學校名稱</label>
+                        <input type="text" class="form-control form-control-sm" id="txtnameCreate">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="txtstatusCreate">狀態</label>
+                        <select class="form-control form-control-sm" id="txtstatusCreate">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtstudentNumberCreate">學生人數</label>
+                        <input type="text" class="form-control form-control-sm" id="txtstudentNumberCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtuseNumberCreate">使用數量</label>
+                        <input type="text" class="form-control form-control-sm" id="txtuseNumberCreate">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm"
+                        onclick="createAccountCommit();">新增學校帳號</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+</body>
+
+</html>

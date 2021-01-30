@@ -1,0 +1,41 @@
+.leftblock{
+    margin-top: 4%;
+    margin-left: 10%;
+    display: inline-block;
+    float: left;
+
+}
+.nameblock{
+    height:500px;
+    width: 330px;
+    background-color:rgb(88, 78, 78);
+    
+}
+.blocktext{
+    color: azure;
+    margin-top: 5%;
+    margin-left: 5%;
+    padding:8% ;
+    font-size: 23px;
+}
+
+.rightblock{
+    margin-top: 4%;
+    display: inline-block;
+}
+.tokenblock{
+    height:430px;
+    width: 700px;
+    margin-left: 3%;
+   
+}
+.tokentext{
+    color:rgb(161, 35, 35);
+    letter-spacing: 30px;
+    font-size: 70px;
+}
+.pagebt{
+    margin: 5%;
+    position: absolute;
+    left:35%
+}

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>學生資料調整</title>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/js/ExcelUpload.js"></script>
+    <script src="/res/js/PrintQRCode.js"></script>
+
+    <script type="text/javascript" src="/res/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/res/js/qrcode.js"></script>
+    <script type="text/javascript" src="/res/js/qrcode.min.js"></script>
+
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="/res/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="/res/bootstrap/bootstrap.bundle.js"></script>
+
+
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+
+
+    <script src="http://oss.sheetjs.com/js-xlsx/xlsx.full.min.js"></script>
+    <script lang="javascript" src="/xlsx/dist/xlsx.full.min.js"></script>
+
+    <style>
+        .table {
+            background-color: transparent;
+            table-layout: fixed;
+        }
+
+        .dataTables_info {
+            font-size: 1em;
+        }
+
+        .paginate_button {
+            font-size: 1em;
+
+        }
+
+        .word {
+            font-size: 1.5em;
+        }
+
+        .titleword {
+            font-size: 2.5em;
+        }
+
+        .StudenDataWord {
+            font-size: 1.5em;
+        }
+
+        .buttonstyle {
+            width: 49%;
+            height: 100px;
+            font-size: 1.5em;
+            display: none;
+        }
+
+        .StudentDataBtn {
+            width: 60%;
+            height: 100px;
+            font-size: 2em;
+        }
+
+        .nav-link {
+            color: black;
+        }
+
+        .nav-link.active {
+            color: white;
+        }
+
+        input[type="file"] {
+            position: fixed;
+            right: 100%;
+            bottom: 100%;
+        }
+
+        .NOStudentIdCss {
+            font-size: 2em;
+        }
+    </style>
+    <script>
+
+        var StudentId = 0;
+        var NickName;
+        var StudentData = ""
+        $(document).ready(function () {
+            StudentId = window.location.href.split("=")[1];
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: parent.webApiUrl + "/sm/GetStudentData",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "Id": StudentId
+                }),
+                success: function (e) {
+                    StudentData = e;
+                    if (e == "NOStudentId" || e == null) {
+                        $("#NOStudentIdText").text("目前無此學生資料,請重新掃描QRCode")
+                        $(".NOStudentIdCss").css("color", "red");
+                        return;
+                    }
+
+                    $("#NOStudentIdText").text("掃描成功")
+                    $(".NOStudentIdCss").css("color", "black");
+                    $(".buttonstyle").css("display", "inline");
+                    var html = ""
+                    html += '<div>學號 : ' + e.number + '</div>'
+                    html += '<div>悠遊卡號 : ' + e.cardNumber + '</div>'
+                    html += '<div>中文名字 : ' + e.chineseName + '</div>'
+                    html += '<div>英文名字 : ' + e.englishName + '</div>'
+                    html += '<div>年齡 : ' + e.year + '</div>'
+                    html += '<div>班級 : ' + e.class + '</div>'
+                    html += '<div>班級號碼 : ' + e.classNumber + '</div>'
+                    html += '<div>周末外出 : <select style="width:100%"id="GoOutWeekendsC" type="text"></select ></div>'
+                    html += '<div>周末外宿 : <select style="width:100%" id="OvernightWeekendsC" type="text"></select ></div>'
+                    html += '<div>平日外出 : <select style="width:100%" id="GoOutWeekdaysC" type="text"></select ></div>'
+                    $("#StudentData").html(html)
+
+                    $.each(GoOutWeekends, function (key, value) {
+                        $("#GoOutWeekendsC").append('<option value=' + key + '>' + value + '</option>');
+                        $("#goOutWeekends").append('<option value=' + key + '>' + value + '</option>');
+
+                    });
+                    $.each(OvernightWeekends, function (key, value) {
+                        $("#OvernightWeekendsC").append('<option value=' + key + '>' + value + '</option>');
+                        $("#overnightWeekends").append('<option value=' + key + '>' + value + '</option>');
+                    });
+                    $.each(GoOutWeekdays, function (key, value) {
+                        $("#GoOutWeekdaysC").append('<option value=' + key + '>' + value + '</option>');
+                        $("#goOutWeekdays").append('<option value=' + key + '>' + value + '</option>');
+                    });
+                    // $("#StudentModal").find("input,select").each(function (index) {
+                    //     $("#" + $(this)[0].id).val(e[$(this)[0].id])
+                    // });
+
+
+                    $("#GoOutWeekendsC").val(e.goOutWeekends)
+                    $("#OvernightWeekendsC").val(e.overnightWeekends)
+                    $("#GoOutWeekdaysC").val(e.goOutWeekdays)
+                    if (e.goOutWeekendsT) {
+                        $("#GoOutWeekendsF").attr("disabled", false);
+                        $("#GoOutWeekendsT").attr("disabled", true);
+                        $("#GoOutWeekendsS").text("周末外出中")
+                        $("#GoOutWeekendsTime").text(moment(e.goOutWeekendsTime).format('YYYY-MM-DD hh:mm:ss'));
+
+                    }
+                    else {
+                        $("#GoOutWeekendsF").attr("disabled", true);
+                        $("#GoOutWeekendsT").attr("disabled", false);
+
+                    }
+                    if (e.overnightWeekendsT) {
+                        $("#OvernightWeekendsF").attr("disabled", false);
+                        $("#OvernightWeekendsT").attr("disabled", true);
+                        $("#OvernightWeekendsS").text("周末外宿中")
+                        $("#OvernightWeekendsTime").text(moment(e.overnightWeekendsTime).format('YYYY-MM-DD hh:mm:ss'));
+
+                    }
+                    else {
+                        $("#OvernightWeekendsF").attr("disabled", true);
+                        $("#OvernightWeekendsT").attr("disabled", false);
+                    }
+                    if (e.goOutWeekdaysT) {
+                        $("#GoOutWeekdaysF").attr("disabled", false);
+                        $("#GoOutWeekdaysT").attr("disabled", true);
+                        $("#GoOutWeekdaysS").text("平日外出中")
+                        $("#GoOutWeekdaysTime").text(moment(e.goOutWeekdaysTime).format('YYYY-MM-DD hh:mm:ss'));
+
+                    }
+                    else {
+                        $("#GoOutWeekdaysF").attr("disabled", true);
+                        $("#GoOutWeekdaysT").attr("disabled", false);
+                    }
+                },
+                error: function () {
+                    $("#NOStudentIdText").text("認證失敗,請點登出重新登入一次")
+                    $(".NOStudentIdCss").css("color", "red");
+
+                }
+            });
+
+
+        });
+        function TurnGoOutWeekends(checked) {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: parent.webApiUrl + "/sm/TurnGoOutWeekends",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "Id": StudentId
+                }),
+                success: function (e) {
+                    alert("變更成功")
+                    if (checked) {
+                        $("#GoOutWeekendsT").attr("disabled", true);
+                        $("#GoOutWeekendsF").attr("disabled", false);
+                        $("#GoOutWeekendsS").text("周末外出中")
+                        $("#GoOutWeekendsTime").text(moment(e.goOutWeekendsTime).format('YYYY-MM-DD hh:mm:ss'));
+
+                    } else {
+                        $("#GoOutWeekendsT").attr("disabled", false);
+                        $("#GoOutWeekendsF").attr("disabled", true);
+                        $("#GoOutWeekendsS").text("")
+                        $("#GoOutWeekendsTime").text("");
+
+                    }
+                },
+
+            });
+        }
+
+        function TurnOvernightWeekends(checked) {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: parent.webApiUrl + "/sm/TurnOvernightWeekends",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "Id": StudentId
+                }),
+                success: function (e) {
+                    alert("變更成功")
+                    if (checked) {
+                        $("#OvernightWeekendsT").attr("disabled", true);
+                        $("#OvernightWeekendsF").attr("disabled", false);
+
+                        $("#OvernightWeekendsS").text("周末外出中")
+                        $("#OvernightWeekendsTime").text(moment(e.overnightWeekendsTime).format('YYYY-MM-DD hh:mm:ss'));
+
+                    }
+                    else {
+                        $("#OvernightWeekendsT").attr("disabled", false);
+                        $("#OvernightWeekendsF").attr("disabled", true);
+                        $("#OvernightWeekendsS").text("")
+                        $("#OvernightWeekendsTime").text("");
+
+                    }
+
+                },
+
+            });
+        }
+
+        function TurnGoOutWeekdays(checked) {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: parent.webApiUrl + "/sm/TurnGoOutWeekdays",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "Id": StudentId
+                }),
+                success: function (e) {
+                    alert("變更成功")
+                    if (checked) {
+                        $("#GoOutWeekdaysT").attr("disabled", true);
+                        $("#GoOutWeekdaysF").attr("disabled", false);
+
+                        $("#GoOutWeekdaysS").text("周末外出中")
+                        $("#GoOutWeekdaysTime").text(moment(e.goOutWeekdaysTime).format('YYYY-MM-DD hh:mm:ss'));
+
+                    } else {
+                        $("#GoOutWeekdaysT").attr("disabled", false);
+                        $("#GoOutWeekdaysF").attr("disabled", true);
+                        $("#GoOutWeekdaysS").text("")
+                        $("#GoOutWeekdaysTime").text("");
+
+                    }
+
+                },
+
+            });
+        }
+
+        function GetStudentData() {
+            $("#StudentModal").modal('show')
+        }
+        function EditStudentCommit() { // 編輯會員送出
+            StudentData.goOutWeekends = $("#GoOutWeekendsC").val();
+            StudentData.overnightWeekends = $("#OvernightWeekendsC").val();
+            StudentData.goOutWeekdays = $("#GoOutWeekdaysC").val();
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/sm/UpdateStudent",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "id":StudentId,
+                    "goOutWeekends": $("#GoOutWeekendsC").val(),
+                    "overnightWeekends": $("#OvernightWeekendsC").val(),
+                    "goOutWeekdays": $("#GoOutWeekdaysC").val(),
+                }),
+                success: function () {
+                    alert("更新成功")
+                }
+            });
+        }
+
+    </script>
+
+
+
+<body>
+
+    <div class="form-group ">
+        <a class="titleword">學生資料調整頁面</a><br>
+        <a id="NOStudentIdText" class="NOStudentIdCss"></a>
+        <div class="StudenDataWord" id="StudentData"></div>
+        <button class=" btn btn-outline-primary my-2 my-sm-0 buttonstyle"
+            onclick="EditStudentCommit(true)">資料更新</button>
+
+        <!-- <button class="btn btn-primary my-2 my-sm-0 StudentDataBtn" onclick="GetStudentData();">學生基本資料</button> -->
+        <div>
+            <button id="GoOutWeekendsT" disabled="disabled" class=" btn btn-outline-primary my-2 my-sm-0 buttonstyle"
+                onclick="TurnGoOutWeekends(true)">周末外出中</button>
+            <button id="GoOutWeekendsF" disabled="disabled" class=" btn btn-outline-danger my-2 my-sm-0 buttonstyle"
+                onclick="TurnGoOutWeekends(false)">周末未外出</button>
+            <a id="GoOutWeekendsS" class="word"></a></br>
+            <a id="GoOutWeekendsTime" class="word"></a>
+        </div>
+        <div>
+            <button id="OvernightWeekendsT" disabled="disabled"
+                class=" btn btn-outline-primary my-2 my-sm-0 buttonstyle"
+                onclick="TurnOvernightWeekends(true)">周末外宿中</button>
+            <button id="OvernightWeekendsF" disabled="disabled" class=" btn btn-outline-danger my-2 my-sm-0 buttonstyle"
+                onclick="TurnOvernightWeekends(false)">周末未外宿</button>
+            <a id="OvernightWeekendsS" class="word"></a></br>
+            <a id="OvernightWeekendsTime" class="word"></a>
+
+        </div>
+        <div>
+            <button id="GoOutWeekdaysT" disabled="disabled" class=" btn btn-outline-primary my-2 my-sm-0 buttonstyle"
+                onclick="TurnGoOutWeekdays(true)">平日外出中</button>
+            <button id="GoOutWeekdaysF" disabled="disabled" class=" btn btn-outline-danger my-2 my-sm-0 buttonstyle"
+                onclick="TurnGoOutWeekdays(false)">平日未外出</button>
+            <a id="GoOutWeekdaysS" class="word"></a></br>
+            <a id="GoOutWeekdaysTime" class="word"></a>
+
+        </div>
+        <div>
+            <a id="Status" class="word"></a>
+            <a id="Time" class="word"></a>
+        </div>
+    </div>
+
+    <div class="modal fade" id="StudentModal" tabindex="-1" role="dialog" aria-labelledby="StudentModaleLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+
+                    <h5 class="modal-title" id="StudentModaleLabel" 學生資料</h5> <button type="button" class="close"
+                        data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="number">學號</label>
+                        <input type="number" disabled="disabled" class="form-control form-control-sm" id="number"
+                            name="number" placeholder="1234567890">
+                    </div>
+                    <div class="form-group">
+                        <label for="cardNumber">悠遊卡號</label>
+                        <input type="number" disabled="disabled" class="form-control form-control-sm" id="cardNumber"
+                            name="cardNumber" placeholder="1234567890">
+                    </div>
+                    <div class="form-group">
+                        <label for="chineseName">中文名字</label>
+                        <input type="text" disabled="disabled" class="form-control form-control-sm" id="chineseName"
+                            name="chineseName">
+                    </div>
+                    <div class="form-group">
+                        <label for="englishName">英文名字</label>
+                        <input type="text" disabled="disabled" class="form-control form-control-sm" id="englishName"
+                            name="englishName">
+                    </div>
+                    <div class="form-group">
+                        <label for="year">年齡</label>
+                        <input type="text" disabled="disabled" class="form-control form-control-sm" id="year"
+                            name="year">
+                    </div>
+                    <div class="form-group">
+                        <label for="class">班級</label>
+                        <input type="text" disabled="disabled" class="form-control form-control-sm" id="class"
+                            name="class">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="classNumber">班級號碼</label>
+                        <input type="number" disabled="disabled" class="form-control form-control-sm" id="classNumber"
+                            name="classNumber">
+                    </div>
+                    <div class="form-group">
+                        <label for="goOutWeekends">周末外出</label>
+                        <select style="width:30%" id="goOutWeekends" type="text"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="overnightWeekends">周末外宿</label>
+                        <select style="width:30%" id="overnightWeekends" type="text"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="goOutWeekdays">平日外出</label>
+                        <select style="width:30%" id="goOutWeekdays" type="text"></select>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="UpdateStudentData();">更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+</body>
+
+</html>

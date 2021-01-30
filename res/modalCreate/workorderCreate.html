@@ -1,0 +1,85 @@
+<div class="container">
+	<div class="row text-center">
+		<div class="col-12">
+		</div>
+		<dvi class="container h-120">
+
+			<!-- left frame -->
+
+			<div class="d-flex justify-content-center">
+				<div class="card mt-8 col-12 animated bounceInDown myForm">
+					<div class="card-header">
+						<h4>工單-新增頁面</h4>
+					</div>
+					<div class="card-body">
+						<form name="build">
+							<div id="dynamic_container">
+								<!-- 
+								指定歸屬訂單編號
+								指定圖檔
+								製程編排
+								製程工法
+								製程自製or外包
+								public int Id { get; set; }
+								public string OrderImage { get; set; }
+								public string OrderSchedule { get; set; }
+								public string OrderMethod { get; set; }
+								public byte? OrderMade { get; set; }
+								-->
+
+								<div>指定圖檔</div>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div>
+									<input type="text" placeholder="" id="orderImageCreate" name="orderImage" class="form-control" />
+								</div>
+								<div>製程編排</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div>
+									<input type="text" placeholder="" id="orderScheduleCreate" name="orderSchedule"
+										class="form-control" />
+								</div>
+								<div>製程工法</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" id="orderScheduleCreate" name="orderSchedule" class="form-control" />
+								</div>
+								<div>製程自製or外包</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" id="orderScheduleCreate" name="orderSchedule" class="form-control" />
+								</div>
+			
+							</div>
+					</div>
+					<div class="card-footer">
+						<!-- <div>時間</div>
+						<div class="input-group mt-3" style="width:120px;float:left;margin:20px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="起始" class="form-control" />
+						</div>
+						<div class="input-group mt-3" style="width:120px;margin:10px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="結束" class="form-control" />
+						</div> -->
+					</div>
+					<input type="button" class="btn btn-success btn-sm float-right submit_btn" value="建立"
+						onclick="workOrderCreateContent()" />
+					</form>
+				</div>
+
+
+			</div>
+	</div>
+</div>

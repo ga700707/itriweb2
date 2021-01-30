@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>合作廠商管理系統</title>
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <script>
+        var dataTables;
+        $(document).ready(function () {
+            dataTables = $('#companyManageTable').DataTable({
+                "lengthMenu": [[10, 20, 30], [10, 20, 30]],
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/company/getall",
+                    contentType: "application/json",
+                    data: function (d) { // change request attribute to json format
+                        d.accountId = getCookie('id');
+                        d.accountType = getCookie('type');
+                        return JSON.stringify(d)
+                    }
+                },
+                "columns": [ // load data from API
+                    { 'data': 'id' },
+                    { 'data': 'salesId' },
+                    { 'data': 'createAccount' },
+                    { 'data': 'groupId' },
+                    { 'data': 'title' },
+                    { 'data': 'contact' }, //5
+                    { 'data': 'phone' },
+                    { 'data': 'mail' },
+                    { 'data': 'addr' },
+                    { 'data': 'invoice' },
+                    { 'data': 'discount' }, //10
+                    { 'data': 'description' },
+                    { 'data': 'groupName' },
+                    { 'data': 'createAccountName' },
+                    { 'data': 'salesName' },
+                    { 'data': null }
+                ],
+                "columnDefs": [{
+                    "targets": [0, 1, 2, 3, 6, 7, 8, 10], // hidden column
+                    "visible": false
+                }, {
+                    "targets": 15, // add edit button
+                    "render": function (data, type, row) {
+                        return '<a href="javascript:void(0);" onclick="detailCompany(' + row.id + ',\'' + row.title + '\')">詳細</a> | <a href="javascript:void(0);" onclick="editCompany(' + row.id + ',\'' + row.title + '\')">編輯</a> | <a href="javascript:void(0);" onclick="recordCompany(' + row.id + ',\'' + row.title + '\')">紀錄</a>';
+                    }
+                }],
+                "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+                "language": { // change display text
+                    "info": " 目前顯示 _START_ 至 _END_ 筆，共計 _TOTAL_ 筆。",
+                    "paginate": {
+                        "first": "第一頁",
+                        "last": "最後一頁",
+                        "next": ">",
+                        "previous": "<"
+                    },
+                }
+            });
+            $("div.toolbar").html('<button class="btn btn-outline-primary btn-sm" onclick="createCompany()">建立合作廠商</button>'); // get dom from toolbar
+
+        });
+        /// Function 
+        function recordCompany(id, title) {
+            $('#companyRecordTable').DataTable({
+                "destroy": true,
+                "lengthChange": false,
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/company/gettradelist",
+                    contentType: "application/json",
+                    data: function (d) { // change request attribute to json format
+                        d.companyId = id;
+                        return JSON.stringify(d)
+                    }
+                },
+                "columns": [ // load data from API
+                    { 'data': 'tradeNo' },
+                    { 'data': 'tradeDate' },
+                    { 'data': 'description' },
+                    { 'data': 'name' }
+                ]
+            });
+            $('#modalRecord').modal('show');
+        }
+
+        function detailCompany(id, title) {
+            $('#modalDetailLabel').html(title);
+            $('#txtTitleDetail').html(title);
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/company/getbyid",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'companyId': id
+                }),
+                success: function (e) {
+                    $('#txtInvoiceDetail').html(e.invoice);
+                    $('#txtContactDetail').html(e.contact);
+                    $('#txtMailDetail').html(e.mail);
+                    $('#txtPhoneDetail').html(e.phone);
+                    $('#txtAddrDetail').html(e.addr);
+                }
+            });
+            $('#modalDetail').modal('show');
+        }
+
+        function createCompany() { // 建立初始化
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/company/getshoplist",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                success: function (r) {
+                    $.each(r, function (i, item) { // generate dropdown list from memberData.js 
+                        $("#selShopListCreate").append('<option value=' + item.groupId + '>' + item.name + '</option>');
+                    });
+                }
+            })
+            $('#modalCreate').modal('show');
+        }
+
+        function createCompanyCommit() { // 建立送出
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/company/create",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'title': $('#txtTitleCreate').val(),
+                    'invoice': $('#txtInvoiceCreate').val(),
+                    'contact': $('#txtContactCreate').val(),
+                    'mail': $('#txtMailCreate').val(),
+                    'phone': $('#txtPhoneCreate').val(),
+                    'addr': $('#txtAddrCreate').val(),
+                    'description': $('#txtDescriptionCreate').val(),
+                    'salesId': 0,
+                    'createAccount': getCookie('id'),
+                    'editAccount': getCookie('id'),
+                    'groupId': $('#selShopListCreate').val(),
+                    'code': "D"
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#modalCreate').modal('hide');
+                }
+            });
+        }
+
+        function editCompany(id, title) { // 編輯會員初始化
+            $('#modalEditLabel').html('編輯 ' + title);
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/company/getbyid",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "companyId": id
+                }),
+                success: function (e) {
+                    $("#selShopListEdit").empty();
+                    $('#txtCompanyIdEdit').val(e.id);
+                    $('#txtTitleEdit').val(e.title);
+                    $('#txtInvoiceEdit').val(e.invoice);
+                    $('#txtContactEdit').val(e.contact);
+                    $('#txtMailEdit').val(e.mail);
+                    $('#txtPhoneEdit').val(e.phone);
+                    $('#txtAddrEdit').val(e.addr);
+                    $('#txtDescriptionEdit').val(e.description);
+                    $.ajax({
+                        type: "POST",
+                        headers: { 'Authorization': getCookie("token") },
+                        url: webApiUrl + "/company/GetShopList",
+                        contentType: "application/json;charset=utf-8",
+                        async: false,
+                        success: function (r) {
+                            $.each(r, function (i, item) { // generate dropdown list from memberData.js 
+                                if (item.groupId == e.groupId) {
+                                    $("#selShopListEdit").append('<option selected="selected" value=' + item.groupId + '>' + item.name + '</option>')
+                                } else {
+                                    $("#selShopListEdit").append('<option value=' + item.groupId + '>' + item.name + '</option>');
+                                }
+                            });
+                        }
+                    })
+                }
+            });
+            $('#modalEdit').modal('show');
+        }
+        function editCompanyCommit() { // 編輯會員送出
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/company/update",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'id': $('#txtCompanyIdEdit').val(),
+                    'title': $('#txtTitleEdit').val(),
+                    'invoice': $('#txtInvoiceEdit').val(),
+                    'contact': $('#txtContactEdit').val(),
+                    'mail': $('#txtMailEdit').val(),
+                    'phone': $('#txtPhoneEdit').val(),
+                    'addr': $('#txtAddrEdit').val(),
+                    'description': $('#txtDescriptionEdit').val(),
+                    'groupId': $('#selShopListEdit').val()
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#modalEdit').modal('hide');
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <!-- DataTables -->
+    <table id="companyManageTable" class="table table-striped table-sm" style="width:100%; font-size: 0.9em;">
+        <thead>
+            <tr>
+                <th>companyId</th>
+                <th>salesId</th>
+                <th>createAccountId</th>
+                <th>groupId</th>
+                <th>公司名稱</th>
+                <th>聯絡人</th>
+                <th>聯絡電話</th>
+                <th>電子郵件</th>
+                <th>地址</th>
+                <th>統編(代碼)</th>
+                <th>折扣</th>
+                <th>備註</th>
+                <th>銷售機制</th>
+                <th>建立者</th>
+                <th>負責業務</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+    <!-- Modal: Detail -->
+    <div class="modal fade" id="modalDetail" tabindex="-1" role="dialog" aria-labelledby="modalDetailLabel"
+        aria-hidden="true" style="font-size:0.8em;">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDetailLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txtTitleDetail" style="font-weight: bold;">公司名稱:</label>
+                        <div id="txtTitleDetail"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtInvoiceDetail" style="font-weight: bold;">統一編號(代碼):</label>
+                        <div id="txtInvoiceDetail"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtContactDetail" style="font-weight: bold;">聯絡人:</label>
+                        <div id="txtContactDetail"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtMailDetail" style="font-weight: bold;">電子郵件:</label>
+                        <div id="txtMailDetail"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtPhoneDetail" style="font-weight: bold;">聯絡電話:</label>
+                        <div id="txtPhoneDetail"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtAddrDetail" style="font-weight: bold;">地址:</label>
+                        <div id="txtAddrDetail"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Edit -->
+    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEditLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txtTitleEdit">公司名稱</label>
+                        <input type="hidden" class="form-control form-control-sm" id="txtCompanyIdEdit">
+                        <input type="text" class="form-control form-control-sm" id="txtTitleEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtInvoiceEdit">統一編號(代碼)</label>
+                        <input type="text" class="form-control form-control-sm" id="txtInvoiceEdit"
+                            placeholder="12345678">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtAddrEdit">地址</label>
+                        <input type="text" class="form-control form-control-sm" id="txtAddrEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtContactEdit">聯絡人</label>
+                        <input type="text" class="form-control form-control-sm" id="txtContactEdit"
+                            placeholder="例如: 小明">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtMailEdit">電子郵件</label>
+                        <input type="text" class="form-control form-control-sm" id="txtMailEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtPhoneEdit">聯絡電話</label>
+                        <input type="text" class="form-control form-control-sm  " id="txtPhoneEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtDescriptionEdit">備註</label>
+                        <input type="text" class="form-control form-control-sm  " id="txtDescriptionEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="selShopListEdit">銷售機制</label>
+                        <select class="form-control form-control-sm" id="selShopListEdit"></select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="editCompanyCommit();">修改存檔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Create -->
+    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCreateLabel">新增合作廠商</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="txtTitleCreate">公司名稱</label>
+                        <input type="text" class="form-control form-control-sm" id="txtTitleCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtInvoiceCreate">統一編號(代碼)</label>
+                        <input type="text" class="form-control form-control-sm" id="txtInvoiceCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtAddrCreate">公司地址</label>
+                        <input type="text" class="form-control form-control-sm" id="txtAddrCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtContactCreate">聯絡人</label>
+                        <input type="text" class="form-control form-control-sm" id="txtContactCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtMailCreate">電子郵件</label>
+                        <input type="text" class="form-control form-control-sm" id="txtMailCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtPhoneCreate">聯絡電話</label>
+                        <input type="text" class="form-control form-control-sm" id="txtPhoneCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtDescriptCreate">備註</label>
+                        <input type="text" class="form-control form-control-sm" id="txtDescriptCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="selShopListCreate">銷售機制</label>
+                        <select class="form-control form-control-sm" id="selShopListCreate"></select>
+                    </div>
+                    <div id="memberId"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm"
+                        onclick="createCompanyCommit();">新增合作廠商</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Record -->
+    <div class="modal fade" id="modalRecord" tabindex="-1" role="dialog" aria-labelledby="modalRecordLabel"
+        aria-hidden="true" style="font-size:0.8em;">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRecordLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table id="companyRecordTable" class="table table-striped table-sm"
+                        style="width:100%; font-size: 0.9em;">
+                        <thead>
+                            <tr>
+                                <th>交易編號</th>
+                                <th>交易日期</th>
+                                <th>交易項目</th>
+                                <th>名稱</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+</body>
+
+</html>

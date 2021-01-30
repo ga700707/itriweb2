@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>檢視個人資料</title>
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/js/bootstrap-datepicker.js"></script>
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <link href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/css/bootstrap-datepicker.css"
+        rel="stylesheet" />
+    <style>
+        #realtimeTableBody td {
+            line-height: 50px;
+        }
+    </style>
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                type: 'GET',
+                url: 'https://prdg.beasy.com.tw/BEasy/API/v2/Translator/QueryTx1',
+                cache: false,
+                data: {
+                    'i': '290',
+                    'tkx': 'ZzFaVJilAevdRKX480Ge'
+                },
+                success: function (e) {
+                    e = JSON.parse(e);
+                    $("#accountCount").html(e.records);
+                    if (e.records > 0) {
+                        for (var i = 0; i < e.results.length; i++) {
+                            var result = e.results[i];
+                            var languageName = languageData[result.language];
+                            var statusName;
+                            if (result.status == 1) statusName = "待命中";
+                            else if (result.status == 2) status = "通話中";
+                            $("#realtimeTableBody").append(
+                                "<tr>" +
+                                "<td>" + languageName + "</td>" +
+                                "<td><img src='https://prdg.beasy.com.tw/BEasy/PortalAux/img/photos/photo" + result.callee + ".jpg' width='50' height='50' /></td>" +
+                                "<td>" + result.name + "</td>" +
+                                "<td>" + statusName + "</td>" +
+                                "</tr>"
+                            );
+                        }
+                    } else {
+                        $("#realtimeTableBody").empty().append("<tr><td colspan='4' style='text-align: center;'>目前無人上線</td></tr>");
+                    }
+                }
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <div>目前線上服務中人數為 <span id="accountCount"></span> 人</div>
+    <table id="realtimeTable" class="display table table-striped table-sm" style="width:100%; font-size: 0.9em;">
+        <thead>
+            <tr>
+                <th>語系</th>
+                <th>照片</th>
+                <th>名稱</th>
+                <th>狀態</th>
+            </tr>
+        </thead>
+        <tbody id="realtimeTableBody">
+        </tbody>
+    </table>
+
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src='https://prdg.beasy.com.tw:8088/socket.io/socket.io.js'></script>
+    <script type="text/javascript">
+        var currentSiteUrl = "https://prdg.beasy.com.tw/";
+        var APIServer = currentSiteUrl + "BEasy/API/v2/";
+
+
+        function callPrdgApi() {
+            $("#realtimeTableBody").empty();
+            $.ajax({
+                type: 'GET',
+                url: 'https://prdg.beasy.com.tw/BEasy/API/v2/Translator/QueryTx1',
+                cache: false,
+                data: {
+                    'i': '290',
+                    'tkx': 'ZzFaVJilAevdRKX480Ge'
+                },
+                success: function (e) {
+                    e = JSON.parse(e);
+                    $("#accountCount").empty().append(e.records);
+                    if (e.records > 0) {
+                        for (var i = 0; i < e.results.length; i++) {
+                            var languageName;
+                            var result = e.results[i];
+                            var statusName;
+                            if (result.status == 1) statusName = "待命中";
+                            else if (result.status == 2) status = "通話中";
+                            $.each(languageData, function (key, value) {
+                                if (key == result.language) languageName = value;
+                            });
+                            $("#realtimeTableBody").append(
+                                "<tr>" +
+                                "<td>" + languageName + "</td>" +
+                                "<td><img src='https://prdg.beasy.com.tw/BEasy/PortalAux/img/photos/photo" + result.callee + ".jpg' width='50' height='50' /></td>" +
+                                "<td>" + result.name + "</td>" +
+                                "<td>" + statusName + "</td>" +
+                                "</tr>"
+                            );
+                        }
+                    } else {
+                        $("#realtimeTableBody").empty().append("<tr><td colspan='4' style='text-align: center;'>目前無人上線</td></tr>");
+                    }
+                }
+            });
+        }
+
+        //websocket connect
+        var socket = io('https://prdg.beasy.com.tw:8088');
+        socket.on('connect', function () {
+            //傳送id/token
+            socket.emit('SendProfile', '{"id" : "pm", "token" : "pm"}');
+        });
+        socket.on('update', function (msg) {
+            callPrdgApi();
+        });
+    </script>
+</body>
+
+</html>

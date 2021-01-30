@@ -1,0 +1,65 @@
+.bg{
+    padding: 2%;
+}
+.nameblock{
+    position: relative;
+    left:40%;
+    width: 400px;
+}
+.name{
+    font-size: 40px;
+    padding-left: 5%;
+}
+.AfterName{
+    font-family:DFKai-sb;
+    color:#888888;
+  }
+.undername{
+    position: relative;
+    left:15%;
+    width: 950px;
+}
+#U ul li{
+    font-size: 30px;
+    display: inline;
+    padding-right: 20%;
+}
+#U  .B li{
+    font-size: 30px;
+    display: inline;
+    padding-right: 23%;
+}
+.bottomblock{
+    position: relative;
+    left: 10%;
+}
+
+
+#B a{
+    color: rgb(119, 119, 57);
+}
+@media screen and (max-width:1200px){
+    .undername{
+        width: 800px;
+        left: 10%;
+    }
+    #U ul li{
+        padding: 50px;
+    }
+    #U  .B li{
+        padding:8%;
+    }
+}
+@media screen and (max-width:800px){
+    .undername{
+        width: 500px;
+        left: 0%;
+    }
+    #U ul li{
+        font-size: 25px;
+        padding: 20px;
+    }
+    #U  .B li{
+        padding:5%;
+    }
+}

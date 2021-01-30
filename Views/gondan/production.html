@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="../../res/bootstrap/bootstrap.min2.css">
+  <link rel="stylesheet" type="text/css" href="../../res/css/userpage2.css">
+  <script src="/res/js/userpage2.js"></script>
+  <script src="/res/js/index.js"></script>
+
+  <script src="/res/bootstrap/bootstrap.min.js"></script>
+  <script src="/res/data/memberData.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+  <script src="/res/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/res/bootstrap/bootstrap.bundle.js"></script>
+
+  <!-- datatables -->
+  <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+  <link href="//cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet" />
+  <link href="//cdn.datatables.net/select/1.3.1/css/select.dataTables.min.css" rel="stylesheet" />
+
+
+  <!------ Include the above in your HEAD tag ---------->
+  <link rel="stylesheet" type="text/css" href="../../res/css/APS.css">
+
+  <script>
+
+    $(document).ready(function () {
+      init();
+      var peopleTable = $('#peopleTable').DataTable({
+        "searching": false,
+        "ordering": false,
+        "serverSide": true,
+        "processing": true,
+
+        "ajax": {
+          "headers": {
+            'Authorization': getCookie("token")
+          },
+          "type": "POST",
+          url: parent.webApiUrl + "/am/GetAll",
+          contentType: "application/json",
+          data: function (d) {
+            return JSON.stringify(d)
+          }
+        },
+
+        "columns": [
+          { 'data': 'userName' },
+          { 'data': null },
+          { 'data': 'userName' },
+
+        ], "columnDefs": [{
+          "targets": [], // hidden column
+          "visible": false
+
+        }, {
+          "targets": 0, // add edit buttononclick="recordChat(' + row.id + ')
+          "render": function (data, type, row) {
+            var html = "";
+            html += '<button onclick="peopleEdit(' + row.id + ');" class="btn btn-secondary btn-round btn-block" data-toggle="modal" data-target=".animate"data-ui-class="a-fadeUp">'
+            html += '<span  style="float:left;" class="glyphicon glyphicon-pencil"></span>' + row.id + '</button>'
+
+            return html
+          }
+        }],
+        "dom": 'Pfrtip', // enable custommize toolbar elements
+        "language": { // change display text
+          "info": "",
+          "search": "搜尋",
+          "paginate": {
+            "first": "第一頁",
+            "last": "最後一頁",
+            "next": ">",
+            "previous": "<"
+          }
+        }
+
+      });
+      var machineTable = $('#machineTable').DataTable({
+        "searching": false,
+        "ordering": false,
+        "serverSide": true,
+        "processing": true,
+
+        "ajax": {
+          "headers": {
+            'Authorization': getCookie("token")
+          },
+          "type": "POST",
+          url: parent.webApiUrl + "/am/GetAll",
+          contentType: "application/json",
+          data: function (d) {
+            return JSON.stringify(d)
+          }
+        },
+
+        "columns": [
+          { 'data': 'userName' },
+
+        ], "columnDefs": [{
+          "targets": [], // hidden column
+          "visible": false
+
+        }, {
+          "targets": 0, // add edit buttononclick="recordChat(' + row.id + ')
+          "render": function (data, type, row) {
+            var html = "";
+            html += '<button class="btn btn-secondary btn-round btn-block" data-toggle="modal" data-target=".animate"data-ui-class="a-fadeUp">' + row.id + '</button>'
+            return html
+          }
+        }],
+        "dom": 'Pfrtip', // enable custommize toolbar elements
+        "language": { // change display text
+          "info": "",
+          "search": "搜尋",
+          "paginate": {
+            "first": "第一頁",
+            "last": "最後一頁",
+            "next": ">",
+            "previous": "<"
+          }
+        }
+
+      });
+      var cutterTable = $('#cutterTable').DataTable({
+        "searching": false,
+        "ordering": false,
+        "serverSide": true,
+        "processing": true,
+
+        "ajax": {
+          "headers": {
+            'Authorization': getCookie("token")
+          },
+          "type": "POST",
+          url: parent.webApiUrl + "/am/GetAll",
+          contentType: "application/json",
+          data: function (d) {
+            return JSON.stringify(d)
+          }
+        },
+
+        "columns": [
+          { 'data': 'userName' },
+
+        ], "columnDefs": [{
+          "targets": [], // hidden column
+          "visible": false
+
+        }, {
+          "targets": 0, // add edit buttononclick="recordChat(' + row.id + ')
+          "render": function (data, type, row) {
+            var html = "";
+            html += '<button class="btn btn-secondary btn-round btn-block" data-toggle="modal" data-target=".animate"data-ui-class="a-fadeUp">' + row.id + '</button>'
+            return html
+          }
+        }],
+        "dom": 'Pfrtip', // enable custommize toolbar elements
+        "language": { // change display text
+          "info": "",
+          "search": "搜尋",
+          "paginate": {
+            "first": "第一頁",
+            "last": "最後一頁",
+            "next": ">",
+            "previous": "<"
+          }
+        }
+
+      });
+      var jigTable = $('#jigTable').DataTable({
+        "searching": false,
+        "ordering": false,
+        "serverSide": true,
+        "processing": true,
+
+        "ajax": {
+          "headers": {
+            'Authorization': getCookie("token")
+          },
+          "type": "POST",
+          url: parent.webApiUrl + "/am/GetAll",
+          contentType: "application/json",
+          data: function (d) {
+            return JSON.stringify(d)
+          }
+        },
+
+        "columns": [
+          { 'data': 'userName' },
+
+        ], "columnDefs": [{
+          "targets": [], // hidden column
+          "visible": false
+
+        }, {
+          "targets": 0, // add edit buttononclick="recordChat(' + row.id + ')
+          "render": function (data, type, row) {
+            var html = "";
+            html += '<button class="btn btn-secondary btn-round btn-block" data-toggle="modal" data-target=".animate"data-ui-class="a-fadeUp">' + row.id + '</button>'
+            return html
+          }
+        }],
+        "dom": 'Pfrtip', // enable custommize toolbar elements
+        "language": { // change display text
+          "info": "",
+          "search": "搜尋",
+          "paginate": {
+            "first": "第一頁",
+            "last": "最後一頁",
+            "next": ">",
+            "previous": "<"
+          }
+        }
+
+      });
+      var materialTable = $('#materialTable').DataTable({
+        "searching": false,
+        "ordering": false,
+        "serverSide": true,
+        "processing": true,
+
+        "ajax": {
+          "headers": {
+            'Authorization': getCookie("token")
+          },
+          "type": "POST",
+          url: parent.webApiUrl + "/am/GetAll",
+          contentType: "application/json",
+          data: function (d) {
+            return JSON.stringify(d)
+          }
+        },
+
+        "columns": [
+          { 'data': 'userName' },
+
+        ], "columnDefs": [{
+          "targets": [], // hidden column
+          "visible": false
+
+        }, {
+          "targets": 0, // add edit buttononclick="recordChat(' + row.id + ')
+          "render": function (data, type, row) {
+            var html = "";
+            html += '<button class="btn btn-secondary btn-round btn-block" data-toggle="modal" data-target=".animate"data-ui-class="a-fadeUp">' + row.id + '</button>'
+            return html
+          }
+        }],
+        "dom": 'Pfrtip', // enable custommize toolbar elements
+        "language": { // change display text
+          "info": "",
+          "search": "搜尋",
+          "paginate": {
+            "first": "第一頁",
+            "last": "最後一頁",
+            "next": ">",
+            "previous": "<"
+          }
+        }
+
+      });
+
+
+    });
+  </script>
+  <script>
+    $(function () {
+      $('#peopleSearch').on('keyup', function () {
+        myFunction(this, "peopleTable");
+      });
+      $('#machineSearch').on('keyup', function () {
+        myFunction(this, "machineTable");
+      });
+      $('#cutterSearch').on('keyup', function () {
+        myFunction(this, "cutterTable");
+      });
+      $('#jigSearch').on('keyup', function () {
+        myFunction(this, "jigTable");
+      });
+      $('#materialSearch').on('keyup', function () {
+        myFunction(this, "materialTable");
+      });
+    });
+    function myFunction(input, tableName) {
+      var filter, table, tr, td, i, txtValue;
+      filter = input.value.toUpperCase();
+      table = document.getElementById(tableName);
+      tr = $("#" + tableName + " tbody tr");
+      console.log(tr)
+      for (i = 0; i < tr.length; i++) {
+
+        td = tr[i].getElementsByTagName("td")[0];
+
+        if (td) {
+          txtValue = td.textContent || td.innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+          } else {
+            $("#" + tableName + " tbody tr")[i].style.display = "none";
+          }
+        }
+      }
+    }
+
+
+
+  </script>
+</head>
+
+<body>
+  <div class="row">
+    <div style="padding:0px 3%;width:19%">
+      <table id="peopleTable">
+        <thead>
+          <tr>
+            <td align=" center">
+              <h1>人員</h1>
+              <h1>人員</h1>
+              <h1>人員</h1>
+            </td>
+          </tr>
+        </thead>
+        <tfoot>
+          <th>
+            <input style="width:100%;" id="peopleSearch"></input>
+            <button class="createBtn btn btn-outline-info" data-toggle="modal" data-target=".animate"
+              data-ui-class="a-fadeUp" onclick="peopleCreate();" style="width: 100%;">
+              <font size="6" color="#737373" ;">新 增</font>
+            </button>
+          </th>
+        </tfoot>
+      </table>
+    </div>
+
+    <div style="padding:0px 3%;width:19%">
+      <table id="machineTable">
+        <thead>
+          <tr>
+            <td align=" center">
+              <h1>機台</h1>
+            </td>
+          </tr>
+        </thead>
+        <tfoot>
+          <th>
+            <input style="width:100%;" id="machineSearch"></input>
+            <button class="createBtn btn btn-outline-info" data-toggle="modal" data-target=".animate"
+              data-ui-class="a-fadeUp" onclick="machineCreate();" style="width: 100%;">
+              <font size="6" color="#737373" ;">新 增</font>
+            </button>
+          </th>
+        </tfoot>
+      </table>
+    </div>
+
+    <div style="padding:0px 3%;width:19%">
+      <table id="cutterTable">
+        <thead>
+          <tr>
+            <td align=" center">
+              <h1>刀具</h1>
+            </td>
+          </tr>
+        </thead>
+        <tfoot>
+          <th>
+            <input style="width:100%;" id="cutterSearch"></input>
+            <button class="createBtn btn btn-outline-info" data-toggle="modal" data-target=".animate"
+              data-ui-class="a-fadeUp" onclick="cutterCreate();" style="width: 100%;">
+              <font size="6" color="#737373" ;">新 增</font>
+            </button>
+          </th>
+        </tfoot>
+      </table>
+    </div>
+
+    <div style="padding:0px 3%;width:19%">
+      <table id="jigTable">
+        <thead>
+          <tr>
+            <td align=" center">
+              <h1>治具</h1>
+            </td>
+          </tr>
+        </thead>
+        <tfoot>
+          <th>
+            <input style="width:100%;" id="jigSearch"></input>
+            <button class="createBtn btn btn-outline-info" data-toggle="modal" data-target=".animate"
+              data-ui-class="a-fadeUp" onclick="jigCreate();" style="width: 100%;">
+              <font size="6" color="#737373" ;">新 增</font>
+            </button>
+          </th>
+        </tfoot>
+      </table>
+    </div>
+
+    <div style="padding:0px 3%;width:19%">
+      <table id="materialTable" ">
+        <thead>
+          <tr>
+            <td align=" center">
+        <h1>原物料</h1>
+        </td>
+        </tr>
+        </thead>
+        <tfoot>
+          <th>
+            <input style="width:100%;" id="materialSearch"></input>
+            <button class="createBtn btn btn-outline-info" data-toggle="modal" data-target=".animate"
+              data-ui-class="a-fadeUp" onclick="materialCreate();" style="width: 100%;">
+              <font size="6" color="#737373" ;">新 增</font>
+            </button>
+          </th>
+        </tfoot>
+      </table>
+    </div>
+
+
+
+
+    <!-- Create -->
+    <div class="word  modal fade modal_right" id="peopleCreate" role="dialog" aria-labelledby="modalCreateLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="peopleCreate_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="cutterCreate" role="dialog" aria-labelledby="modalCreateLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="cutterCreate_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="machineCreate" role="dialog" aria-labelledby="modalCreateLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="machineCreate_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="materialCreate" role="dialog" aria-labelledby="modalCreateLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="materialCreate_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="jigCreate" role="dialog" aria-labelledby="modalCreateLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="jigCreate_Content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit -->
+    <div class="word  modal fade modal_right" id="peopleEdit" role="dialog" aria-labelledby="modalEditLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="peopleEdit_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="cutterEdit" role="dialog" aria-labelledby="modalEditLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="cutterEdit_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="machineEdit" role="dialog" aria-labelledby="modalEditLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="machineEdit_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="materialEdit" role="dialog" aria-labelledby="modalEditLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="materialEdit_Content"></div>
+        </div>
+      </div>
+    </div>
+    <div class="word  modal fade modal_right" id="jigEdit" role="dialog" aria-labelledby="modalEditLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+        <div class="myForm modal-content">
+          <div id="jigEdit_Content"></div>
+        </div>
+      </div>
+    </div>
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+</body>
+
+</html>

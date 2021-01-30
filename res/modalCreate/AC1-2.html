@@ -1,0 +1,225 @@
+<head>
+    <script>
+        $(document).ready(function () {
+            $.each(AnswerChoice, function (key, value) { // generate dropdown list from memberData.js 
+                $("#answerCreate").append('<option value=' + key + '>' + value + '</option>');
+            });
+        });
+        function PicCheck(sender) {
+            var validExts = new Array(".jpg");
+            var fileExt = sender.value;
+            console.log(fileExt);
+            fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+            if (validExts.indexOf(fileExt) < 0) {
+                alert("檔案類型錯誤，可接受的副檔名有：" + validExts.toString());
+                sender.value = null;
+                return false;
+            }
+            else
+                return true;
+        }
+        function MediaCheck(sender) {
+            var validExts = new Array(".mp3");
+
+            var fileExt = sender.value;
+            fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+            if (validExts.indexOf(fileExt) < 0) {
+                alert("檔案類型錯誤，可接受的副檔名有：" + validExts.toString());
+                sender.value = null;
+                return false;
+            }
+            else
+                return true;
+        }
+        $(function () {
+            $("#Create2-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == window.location.href + '#')
+                    $(this).attr("src", "/res/img/upload_image.png");
+            });
+            $("#UploadpicExampleCreate").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picExampleCreate").attr("src", objUrl);
+                        $("#picExampleCreate").show();
+                    }
+                }
+            });
+
+            $("#UploadvoiceExampleCreate").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+
+                        $("#voiceExampleCreate").attr("src", objUrl);
+                        $("#voiceExampleCreate").show();
+                    }
+                }
+            });
+            $("#UploadpicACreate").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picACreate").attr("src", objUrl);
+                        $("#picACreate").show();
+                    }
+                }
+            });
+            $("#UploadvoiceACreate").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#voiceACreate").attr("src", objUrl);
+                        $("#voiceACreate").show();
+                    }
+                }
+            });
+            $("#UploadpicBCreate").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picBCreate").attr("src", objUrl);
+                        $("#picBCreate").show();
+                    }
+                }
+            });
+            $("#UploadvoiceBCreate").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#voiceBCreate").attr("src", objUrl);
+                        $("#voiceBCreate").show();
+                    }
+                }
+            });
+            $("#UploadpicCCreate").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picCCreate").attr("src", objUrl);
+                        $("#picCCreate").show();
+                    }
+                }
+            });
+            $("#UploadvoiceCCreate").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#voiceCCreate").attr("src", objUrl);
+                        $("#voiceCCreate").show();
+                    }
+                }
+            });
+        }); 
+    </script>
+
+</head>
+<style>
+    .btn-image {
+        background-color: #D4D4D4;
+    }
+
+    .btn-voice {
+        background-color: #D4D4D4;
+        line-height: 50px;
+        font-size: 30px;
+        font-family: fantasy;
+        text-align: center;
+        color: white;
+    }
+</style>
+
+
+<!-- Modal: CreateExamContent -->
+<div id="modalCreateExamContent">
+    <div class="modal-body">
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for="picExampleCreate">題目圖片</label>
+                <label class="btn-sm btn-outline-light btn-image">
+                    <img class="img-rounded" src="#" id="picExampleCreate" width="75" height="80" />
+                    <input accept=".jpg" id="UploadpicExampleCreate" style="display:none;" type="file">
+                </label>
+            </div>
+            <textarea id="picExampleMarkCreate" placeholder="題目圖片備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" voiceExampleCreate">題目音檔</label>
+                <audio class="col-sm-5" id="voiceExampleCreate" controls="" style="width:100px;""></audio>
+                    <label class=" col-sm-3 btn-outline-light btn-voice">
+                    <input accept=".mp3" id="UploadvoiceExampleCreate" style="display:none;" type="file">
+                    Upload
+                    </label>
+            </div>
+            <textarea id="voiceExampleMarkCreate" placeholder="題目音檔備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" voiceACreate">選項A 音檔</label>
+                <audio class="col-sm-5" id="voiceACreate" controls="" style="width:100px;""></audio>
+                            <label class=" col-sm-3 btn-outline-light btn-voice">
+                    <input accept=".mp3" id="UploadvoiceACreate" style="display:none;" type="file">
+                    Upload
+                    </label>
+            </div>
+            <textarea id="voiceAmarkCreate" placeholder="選項A 音檔備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+
+
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" voiceBCreate">選項B 音檔</label>
+                <audio class="col-sm-5" id="voiceBCreate" controls="" style="width:100px;""></audio>
+                                <label class=" col-sm-3 btn-outline-light btn-voice">
+                    <input accept=".mp3" id="UploadvoiceBCreate" style="display:none;" type="file">
+                    Upload
+                    </label>
+            </div>
+            <textarea id="voiceBmarkCreate" placeholder="選項B 音檔備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" voiceCCreate">選項C 音檔</label>
+                <audio class="col-sm-5" id="voiceCCreate" controls="" style="width:100px;""></audio>
+                                    <label class=" col-sm-3 btn-outline-light btn-voice">
+                    <input accept=".mp3" id="UploadvoiceCCreate" style="display:none;" type="file">
+                    Upload
+                    </label>
+            </div>
+            <textarea id="voiceCmarkCreate" placeholder="選項C 音檔備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+
+        <div class="form-group row">
+            <label class="col-sm-3" for=" answerCreate">正確答案</label>
+            <select type="text" class="form-control form-control-sm col-sm-4" id="answerCreate"></select>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+    <button id="CreateExamContentBtn" type="button" class="btn btn-primary btn-sm"
+        onclick="CreateExamContent();">新增考題</button>
+</div>
+</div>

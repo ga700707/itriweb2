@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>審題系統</title>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/js/ExcelUpload.js"></script>
+    <script src="/res/js/PrintQRCode.js"></script>
+    <!-- zipdownload -->
+    <script src="/node_modules/jszip/dist/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.8/FileSaver.js"></script>
+
+    <script type="text/javascript" src="/res/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/res/js/qrcode.js"></script>
+    <script type="text/javascript" src="/res/js/qrcode.min.js"></script>
+
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="/res/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="/res/bootstrap/bootstrap.bundle.js"></script>
+
+
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+
+
+    <script src="http://oss.sheetjs.com/js-xlsx/xlsx.full.min.js"></script>
+    <script lang="javascript" src="/xlsx/dist/xlsx.full.min.js"></script>
+
+    <style>
+        .table {
+            background-color: transparent;
+            table-layout: fixed;
+        }
+
+        .dataTables_info {
+            font-size: 1em;
+        }
+
+        .paginate_button {
+            font-size: 1em;
+
+        }
+
+        .word {
+            font-size: 1em;
+        }
+
+        .nav-link {
+            color: black;
+        }
+
+        .nav-link.active {
+            color: white;
+        }
+
+        input[type="file"] {
+            position: fixed;
+            right: 100%;
+            bottom: 100%;
+        }
+
+        .custom-file-upload {
+            border: 1px solid #ccc;
+            display: inline-block;
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        var formData = new FormData();
+        var dataTables;
+        var EditExampleContent = [];
+        var EditItem = 0;
+        var hideExamplearray = [];
+        var hideExamarray = [];
+        var ReturnArray = [];
+        var examId = 0;
+        $(document).ready(function () {
+
+
+            $("#txtstatusCreate").append('<option value="1">啟用</option>');
+            $("#txtstatusCreate").append('<option value="0">停用</option>');
+            $("#txtgenderCreate").append('<option value="0">男</option>');
+            $("#txtgenderCreate").append('<option value="1">女</option>');
+
+            $.each(GoOutWeekends, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtgoOutWeekendsCreate").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $.each(GoOutWeekdays, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtgoOutWeekdaysCreate").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $.each(OvernightWeekends, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtovernightWeekendsCreate").append('<option value=' + key + '>' + value + '</option>');
+            });
+
+
+            $("#txtstatusEdit").append('<option value="1">啟用</option>');
+            $("#txtstatusEdit").append('<option value="0">停用</option>');
+            $("#txtgenderEdit").append('<option value="0">男</option>');
+            $("#txtgenderEdit").append('<option value="1">女</option>');
+
+            $.each(GoOutWeekends, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtgoOutWeekendsEdit").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $.each(GoOutWeekdays, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtgoOutWeekdaysEdit").append('<option value=' + key + '>' + value + '</option>');
+            });
+            $.each(OvernightWeekends, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtovernightWeekendsEdit").append('<option value=' + key + '>' + value + '</option>');
+            });
+
+            dataTables = $('#StudentTable').DataTable({
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/sm/TeacherGetAll",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Id = getCookie('id');
+                        return JSON.stringify(d)
+                    }
+                },
+                "rowCallback": function (row, data) {
+                },
+                "columns": [
+                    //Id, AccountId, Status, Number, ChineseName, EnglishName, Gender, Year, Class, ClassNumber, GoOutWeekends, GoOutWeekdays, OvernightWeekends
+
+                    { 'data': 'id' },
+                    { 'data': 'status' },
+                    { 'data': 'number' },
+                    { 'data': 'cardNumber' },
+
+                    { 'data': 'chineseName' },
+                    { 'data': 'englishName' },
+                    { 'data': 'gender' },//5
+                    { 'data': 'year' },
+                    { 'data': 'class' },
+                    { 'data': 'classNumber' },
+                    { 'data': 'goOutWeekends' },
+                    { 'data': 'overnightWeekends' },//10
+                    { 'data': 'goOutWeekdays' },
+                    { 'data': 'qrcode' },
+                    { 'data': 'createDate' },
+                    { 'data': 'modifyDate' },
+                    { 'data': null },
+                ], "columnDefs": [{
+                    "targets": [0], // hidden column
+                    "visible": false
+                }, {
+                    "targets": 1, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        var checked = (row.status == 1) ? "啟用" : "停用";
+                        return "<a href='javascript:void(0);' onclick='changeSMStatus(" + row.id + ",\" " + checked + row.chineseName + " \", \"" + checked + "\");'>" + checked + "中</a>";
+                    }
+                }, {
+                    "targets": 6, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        if (row.gender)
+                            return "女"
+                        else
+                            return "男"
+                    }
+                }, {
+                    "targets": 10, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        return GoOutWeekends[row.goOutWeekends];
+                    }
+                }, {
+                    "targets": 11, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        return OvernightWeekends[row.overnightWeekends];
+
+                    }
+                }, {
+                    "targets": 12, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        return GoOutWeekdays[row.goOutWeekdays];
+
+                    }
+                }, {
+                    "targets": 13, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+
+
+                        //     var html = ""
+                        //     //html += '<div id="'+ row.id +'">'+row.id+'</div'
+                        //     // new QRCode(document.getElementById(row.id), "http://www.runoob.com"); 
+                        //     /*generate QRCode*/
+                        //     var qrcodjs = new QRCode("qr", {
+                        //         text: "http://www.runoob.com",
+                        //         width: 128,
+                        //         height: 128,
+                        //         colorDark: "#000000",
+                        //         colorLight: "#ffffff",
+                        //         correctLevel: QRCode.CorrectLevel.H
+                        //     });
+                        //    // console.log(qrcodjs)
+                        //     /*get base64*/
+                        //     var img = qrcodjs._el.childNodes[1].src
+                        //     console.log(img)
+                        //  html += '<canvas width="128" height="128" style="display: none;"></canvas>'
+                        //html += '<img class="img-rounded"  src="' + img + '"   width="75" height="80" />'
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.qrcode != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.qrcode + '"   width="75" height="80" />'
+                        html += '</div>'
+                        return html
+                    }
+                }, {
+                    "targets": [14, 15], render: function (data) {
+                        if (data == null)
+                            return "無";
+                        else {
+                            var dateOrigin = new Date(data)
+                            dateOrigin.setHours(dateOrigin.getHours() + 8)
+                            return moment(dateOrigin).format('YYYY-MM-DD hh:mm:ss');
+                        }
+                    }
+                }, {
+                    "targets": 16, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        var html = "";
+                        //html += '<a href="javascript:void(0);" onclick="DetailStudent(' + row.id + ')">詳細</a> '
+                        html += "<a href='javascript:void(0);' onclick='EditStudent(" + row.id + ",\"" + row.chineseName + "\");'>編輯</a>";
+
+                        html += '| <a href="javascript:void(0);" onclick="DeleteStudent(' + row.id + ')">刪除</a>'
+
+                        return html
+                    }
+                }],
+                "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+                "language": { // change display text
+                    "info": " 目前顯示 _START_ 至 _END_ 筆，共計 _TOTAL_ 筆。",
+                    "paginate": {
+                        "first": "第一頁",
+                        "last": "最後一頁",
+                        "next": ">",
+                        "previous": "<"
+                    }
+                }
+
+            });
+            //new QRCode($("#1"), "http://www.runoob.com");
+            // console.log(dataTables);
+            // var qrcodjs = new QRCode("1", {
+            //                 text: "http://www.runoob.com",
+            //                 width: 128,
+            //                 height: 128,
+            //                 colorDark: "#000000",
+            //                 colorLight: "#ffffff",
+            //                 correctLevel: QRCode.CorrectLevel.H
+            //             });
+
+        });
+
+
+        function DetailStudent(id) {
+            $('#DetailStudent').DataTable({
+                "lengthMenu": [[1, 2, 3], [1, 2, 3]],
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "lengthChange": false,
+                "paging": false,
+
+                "destroy": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/sm/GetStudentDetail",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Id = id
+                        return JSON.stringify(d)
+                    },
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'status' },
+                    { 'data': 'userName' },
+                    { 'data': 'nickName' },
+                    { 'data': 'language' },
+                    { 'data': 'createDate' },
+                    { 'data': 'modifyDate' },
+
+                ], "columnDefs": [{
+                    "targets": [0], // hidden column
+                    "visible": false
+                }],
+
+            });
+
+
+            $('#modalRecord').modal('show');
+        }
+
+        function DeleteStudent(id, msg) { // 變更狀態
+            var confirmStatus = confirm("是否刪除此帳號?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/sm/Delete",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "id": id
+                    }),
+                    success: function () {
+                        dataTables.draw();
+                    }
+                });
+            }
+        }
+        function changeSMStatus(id, msg) { // 變更狀態
+            var confirmStatus = confirm("是否" + msg + "?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/sm/TurnStatus",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        "id": id
+                    }),
+                    success: function () {
+                        dataTables.draw();
+                    }
+                });
+            }
+        }
+        function CreateStudent() { // 建立會員初始化
+
+
+
+            $('#SMCreate').modal('show');
+
+        }
+        function CreateStudentCommit() { // 建立初始化
+            if ($('#txtpasswordCreate').val() != $('#txtConfirmPasswordCreate').val()) return alert("密碼不符");
+            if ($('#txtnameCreate').val() == "") return alert("暱稱不正確");
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/sm/Create",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'status': $('#txtstatusCreate').val(),
+                    'Number': $('#txtnumberCreate').val(),
+                    'CardNumber': $('#txtcardnumberCreate').val(),
+
+                    'ChineseName': $('#txtchineseNameCreate').val(),
+                    'EnglishName': $('#txtenglishNameCreate').val(),
+                    'Gender': $('#txtgenderCreate').val(),
+                    'Year': $('#txtyearCreate').val(),
+                    'Class': $('#txtclassCreate').val(),
+                    'ClassNumber': $('#txtclassNumberCreate').val(),
+                    'GoOutWeekends': $('#txtgoOutWeekendsCreate').val(),
+                    'OvernightWeekends': $('#txtovernightWeekendsCreate').val(),
+                    'GoOutWeekdays': $('#txtgoOutWeekdaysCreate').val(),
+                    'AccountId': getCookie('id'),
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#SMCreate').modal('hide');
+                }
+
+            })
+            $('#SMCreate').modal('show');
+        }
+        function EditStudent(id, title) { // 編輯會員初始化
+            $('#SMEditLabel').html('編輯 ' + title);
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/sm/GetById",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "id": id
+                }),
+                success: function (e) {
+                    $("#txtidEdit").val(e.id);
+                    $("#txtstatusEdit").val(e.status);
+                    $('#txtnumberEdit').val(e.number),
+                        $('#txtcardnumberEdit').val(e.cardNumber),
+
+                        $('#txtchineseNameEdit').val(e.chineseName),
+                        $('#txtenglishNameEdit').val(e.englishName),
+                        $('#txtgenderEdit').val(e.gender),
+                        $('#txtyearEdit').val(e.year),
+                        $('#txtclassEdit').val(e.class),
+                        $('#txtclassNumberEdit').val(e.classNumber),
+                        $('#txtgoOutWeekendsEdit').val(e.goOutWeekends),
+                        $('#txtovernightWeekendsEdit').val(e.overnightWeekends),
+                        $('#txtgoOutWeekdaysEdit').val(e.goOutWeekdays)
+                },
+            });
+            $('#SMEdit').modal('show');
+
+        }
+        function EditStudentCommit() { // 編輯會員送出
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/sm/Update",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    'Id': $('#txtidEdit').val(),
+                    'status': $('#txtstatusEdit').val(),
+                    'Number': $('#txtnumberEdit').val(),
+                    'CardNumber': $('#txtcardnumberEdit').val(),
+                    'ChineseName': $('#txtchineseNameEdit').val(),
+                    'EnglishName': $('#txtenglishNameEdit').val(),
+                    'Gender': $('#txtgenderEdit').val(),
+                    'Year': $('#txtyearEdit').val(),
+                    'Class': $('#txtclassEdit').val(),
+                    'ClassNumber': $('#txtclassNumberEdit').val(),
+                    'GoOutWeekends': $('#txtgoOutWeekendsEdit').val(),
+                    'OvernightWeekends': $('#txtovernightWeekendsEdit').val(),
+                    'GoOutWeekdays': $('#txtgoOutWeekdaysEdit').val(),
+                    'AccountId': getCookie('id'),
+                }),
+                success: function () {
+                    dataTables.draw();
+                    $('#SMEdit').modal('hide');
+                }
+            });
+        }
+
+
+        $(function () {
+
+
+            $("#ExcelFile").each(function () {
+                $(this).attr("src", "/res/img/Excel01.png");
+            });
+            $("#UploadExcelFile").change(function () {
+                $(this).attr("src", "/res/img/Excel_suc.png");
+            });
+
+        });
+
+
+        function getObjectURL(file) {
+            var url = null;
+            if (window.createObjectURL != undefined) { // basic  
+                url = window.createObjectURL(file);
+            } else if (window.URL != undefined) { // mozilla(firefox)  
+                url = window.URL.createObjectURL(file);
+            } else if (window.webkitURL != undefined) { // webkit or chrome  
+                url = window.webkitURL.createObjectURL(file);
+            }
+            return url;
+        }
+
+
+
+
+
+    </script>
+
+</head>
+<style>
+    .modal_left {
+        left: -20%;
+        outline: none;
+
+    }
+
+    .modal_right {
+        left: 0%;
+        overflow-y: "hidden";
+    }
+</style>
+
+<body>
+
+    <h2>編輯頁面</h2>
+
+
+
+
+
+    <button class="float-left btn btn-outline-info my-2 my-sm-0" onclick="CreateStudent()">新增學生資料</button>
+
+    <label for="UploadExcelFile" class="btn btn-outline-info my-2 my-sm-0">
+        <a class="fa fa-cloud-upload"></a> Excel匯入
+    </label>
+    <input id="UploadExcelFile" onchange="importf();" type="file" />
+    <button id="PrintQRCode" class=" btn btn-outline-info my-2 my-sm-0" onclick="DownLoadImg()">列印QRCode</button>
+
+    <!-- DataTables -->
+
+
+    <div id="qr"></div>
+    <table id="StudentTable" class="word able table-striped table-sm" style="width:100%; ">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>狀態</th>
+                <th>學號</th>
+                <th>悠遊卡號</th>
+
+                <th>中文名字</th>
+                <th>英文名字</th>
+                <th>性別</th>
+                <th>年齡</th>
+                <th>班別</th>
+                <th>房號</th>
+                <th>周末外出</th>
+                <th>周末外宿</th>
+                <th>平日外出</th>
+                <th>QRcode</th>
+                <th>創建日期</th>
+                <th>修改日期</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+    <!-- Detail -->
+    <div class=" modal fade" id="modalRecord" tabindex="-1" role="dialog" aria-labelledby="modalRecordLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRecordLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <table id="DetailStudent" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>狀態</th>
+                                <th>名稱</th>
+                                <th>暱稱</th>
+                                <th>語言</th>
+                                <th>創建日期</th>
+                                <th>修改日期</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                    </table>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Edit -->
+    <div class="modal fade" id="SMEdit" tabindex="-1" role="dialog" aria-labelledby="SMEditLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="SMEditLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <input type="hidden" class="form-control form-control-sm" id="txtidEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtstatusEdit">狀態</label>
+                        <select class="form-control form-control-sm" id="txtstatusEdit">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtnumberEdit">學號</label>
+                        <input type="number" class="form-control form-control-sm" id="txtnumberEdit">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="txtcardnumberEdit">悠遊卡號</label>
+                        <input type="number" class="form-control form-control-sm" id="txtcardnumberEdit">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="txtchineseNameEdit">中文名字</label>
+                        <input type="text" class="form-control form-control-sm" id="txtchineseNameEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtenglishNameEdit">英文名字</label>
+                        <input type="text" class="form-control form-control-sm" id="txtenglishNameEdit">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="txtgenderEdit">性別</label>
+                        <select class="form-control form-control-sm" id="txtgenderEdit">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtyearEdit">年齡</label>
+                        <input type="number" class="form-control form-control-sm" id="txtyearEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtclassEdit">班別</label>
+                        <input type="text" class="form-control form-control-sm" id="txtclassEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtclassNumberEdit">房號</label>
+                        <input type="number" class="form-control form-control-sm" id="txtclassNumberEdit">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtgoOutWeekendsEdit">周末外出</label>
+                        <select class="form-control form-control-sm" id="txtgoOutWeekendsEdit">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtovernightWeekendsEdit">周末外宿</label>
+                        <select class="form-control form-control-sm" id="txtovernightWeekendsEdit">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtgoOutWeekdaysEdit">平日外出</label>
+                        <select class="form-control form-control-sm" id="txtgoOutWeekdaysEdit">
+                        </select>
+                    </div>
+
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="EditStudentCommit();">修改存檔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal: Create -->
+    <div class="modal fade" id="SMCreate" tabindex="-1" role="dialog" aria-labelledby="SMCreateLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="SCreateLabel">新增學生資料</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="hidden" class="form-control form-control-sm" id="txtidCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtstatusCreate">狀態</label>
+                        <select class="form-control form-control-sm" id="txtstatusCreate">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtnumberCreate">學號</label>
+                        <input type="number" class="form-control form-control-sm" id="txtnumberCreate">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="txtcardnumberCreate">悠遊卡號</label>
+                        <input type="number" class="form-control form-control-sm" id="txtcardnumberCreate">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="txtchineseNameCreate">中文名字</label>
+                        <input type="text" class="form-control form-control-sm" id="txtchineseNameCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtenglishNameCreate">英文名字</label>
+                        <input type="text" class="form-control form-control-sm" id="txtenglishNameCreate">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="txtgenderCreate">性別</label>
+                        <select class="form-control form-control-sm" id="txtgenderCreate">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtyearCreate">年齡</label>
+                        <input type="number" class="form-control form-control-sm" id="txtyearCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtclassCreate">班別</label>
+                        <input type="text" class="form-control form-control-sm" id="txtclassCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtclassNumberCreate">房號</label>
+                        <input type="number" class="form-control form-control-sm" id="txtclassNumberCreate">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtgoOutWeekendsCreate">周末外出</label>
+                        <select class="form-control form-control-sm" id="txtgoOutWeekendsCreate">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtovernightWeekendsCreate">周末外宿</label>
+                        <select class="form-control form-control-sm" id="txtovernightWeekendsCreate">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txtgoOutWeekdaysCreate">平日外出</label>
+                        <select class="form-control form-control-sm" id="txtgoOutWeekdaysCreate">
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-sm"
+                        onclick="CreateStudentCommit();">新增會員帳號</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+</body>
+
+</html>

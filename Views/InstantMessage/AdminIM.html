@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="">
+        <meta name="author" content="">
+        <meta name="referrer" content="no-referrer" />
+        <title>管理員聊天室</title>
+        <script src="/res/js/index.js"></script>
+        <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+        <script src="/res/bootstrap/bootstrap.min.js"></script>
+        <script src="/res/js/index.js"></script>
+        <script src="/res/data/memberData.js"></script>
+        <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+        <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+        <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    
+        <!--socket -->
+    
+        <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+        <script src="http://socketio.beasy.com.tw/socket.io/socket.io.js"></script>
+        <script src="/res/js/SAdmin.js"></script>
+        <!--chat -->
+        <link rel="stylesheet" href="./kendo/kendo.common.min.css" />
+        <link rel="stylesheet" href="./kendo/kendo.default.min.css" />
+        <link rel="stylesheet" href="./kendo/kendo.default.mobile.min.css" />
+    
+        <script src="./kendo/jquery.min.js"></script>
+        <script src="./kendo/kendo.all.min.js"></script>
+    <!-- common and config -->
+    <!--        <link rel="stylesheet" href="css/common.css" />-->
+    <script>
+        $(document).ready(function() {
+            Language = window.location.href.split("=")[1];
+            ChatId=0;
+            sleep(1000);
+           // GetMonitorButton();
+           // sleep(1000);
+            GetMessageList();
+            sleep(1000);
+            GetMessageState();
+            $('input').attr("readonly",true);
+            console.log( document.getElementById("chat").getElementsByClassName("k-message-box")[0]);
+            document.getElementById("chat").getElementsByClassName("k-message-box")[0].remove();
+        });
+    
+        function doReset(obj) {
+            if(Injection)
+                Interpreter_Left();
+            ChatId = obj.id;
+            MemberId = obj.value;
+            document.getElementById(ChatId).getElementsByClassName("badge")[0].innerText = "";
+            document.getElementById('chat').getElementsByClassName('k-message-list k-avatars')[0].innerHTML="";
+            GetChatLog();
+        }
+
+        function GetMessageList(){
+            console.log("GetMessageList");
+            $.ajax({
+                type : "post",
+                url : webApiUrl + "/message/GetMessageList/",
+                dataType: 'JSON',
+                contentType: 'application/json',
+                headers: {
+                    'Authorization' : getCookie("token")
+                },
+                success : function(result) {
+                    for( i=0;i<result.length;i++){
+                        console.log(result);
+                        var text = "";
+                        if(result[i].isRobot)
+                            text = ChangeLanguage(result[i].language)+ "機器人" +" 與 ";
+                        else{
+                            text = ChangeLanguage(result[i].language)+ "口譯人員"+result[i].accountName +" 與 ";
+                        }
+                        addMessageList(text,result[i].id,result[i].memberId,result[i].memberName,result[i].isRobot,result[i].accountId);
+                    }
+                },
+                error : function(result) {
+                    //options.error(result);
+                }
+            });
+            //location.href="ChatRoom.html";
+        }
+        function GetMessageState(){
+            console.log("GetMessageList");
+            $.ajax({
+                type : "post",
+                url : webApiUrl + "/message/GetMessageState/",
+                dataType: 'JSON',
+                contentType: 'application/json',
+                headers: {
+                    'Authorization' : getCookie("token")
+                },
+                success : function(result) {
+                    for( i=0;i<result.length;i++){
+                        addMessageState(result[i].discription,result[i].createDate);
+                    }
+                },
+                error : function(result) {
+                    //options.error(result);
+                }
+            });
+            //location.href="ChatRoom.html";
+        }
+        function GetChatLog(){
+            console.log("GetChatLog");
+            $.ajax({
+                type : "post",
+                url : webApiUrl + "/message/GetChatLog/",
+                dataType: 'JSON',
+                contentType: 'application/json',
+                headers: {
+                    'Authorization' : getCookie("token")
+                },
+                data: JSON.stringify({
+                    'chatId': ChatId,
+                }),
+                success : function(result) {
+                    console.log(result);
+                    var chat = $("#chat").data("kendoChat");
+
+                    for(i=0;i<result.length;i++){
+                            var Text = "";
+                            if(result[i].senderType=="Robot")
+                                Text = result[i].translateText;
+                            else
+                                Text = result[i].rowText;
+                            chat.renderMessage({
+                                type: "text",
+                                text: Text
+                            }, {
+                                id: kendo.guid(),
+                                name: result[i].nickName,
+                            });
+
+
+                    }
+                },
+                error : function(result) {
+                    //options.error(result);
+                }
+            });
+        }
+       
+    </script>
+</head>
+<body >
+    <div id="example">
+            <div  class="peoplenumber"   style = "height:50px;float:left;font-size:18px;text-align:center;line-height:50px;">
+                <span>目前值機人數:</span>
+                <span id = "InterpreterNumber">0</span>
+            </div>
+            <div  class="peoplenumber"   style = "height:50px;float:left;font-size:18px;text-align:center;line-height:50px;">
+                <span>用戶上線人數:</span>
+                <span id = "MemberNumber">0</span>
+            </div>
+            <div>
+                <div style="width: 1000px;height: 50px;clear:both;">
+            <div class="a"  style = "height:50px;float:left;font-size:18px;text-align:center;line-height:50px;">
+                即時訊息對話視窗
+            </div>
+            <div class="b"  style = "height:50px;float:left;font-size:18px;text-align:center;line-height:50px;">
+                目前對話串清單
+            </div>
+            <div class="c" style = "height:50px;float:left;font-size:18px;text-align:center;line-height:50px;">
+                即時訊息對話狀態
+            </div>
+                </div>
+
+            <div style="width: 1000px;height: 600px;clear:both;">
+            <div >
+                  <div class="a"   style = " float:left;">
+                      <div id="chat"  style = "border: 0px ; width: 298px;height: 365px; float:left;">
+                      </div>
+                  </div>
+            </div>
+            <div class="b"  style = " overflow-y: scroll;float:left;">
+                <ul id="MessageList"></ul>
+            </div>
+            <div class="c" style = " overflow-y: scroll;float:left;">
+                <ul id="MessageState"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        $("#chat").kendoChat({
+            sendMessage: function(e) {
+                console.log("Message sent: " + e.text);
+                sendText(e.text);
+            }
+        });
+
+
+    </script>
+    <style>
+        .k-card .image-attachment {
+            max-height: 120px;
+        }
+
+    </style>
+
+</body>
+<style>
+
+    .a  {
+
+        width: 300px;
+        height: 400px;
+        border: 1px solid black;
+        font-size: 13px;}
+    .b, .c  {
+        width: 300px;
+        height: 400px;
+        border: 1px solid black;
+        font-size: 13px;}
+    .peoplenumber {
+        width: 450px;
+        height: 50px;
+        border: 1px solid black;
+        font-size: 13px;}
+
+    #detail form{
+        height: 280px;
+        overflow: hidden;
+    }
+    #detail img{
+        width: 100px;
+        margin-bottom: 5px;
+    }
+    #detail input[type="file"]{
+        width: 200px;
+    }
+
+    .window-footer .cancel-button{
+        margin-right: 8.4px;
+    }
+    .badge {
+        position: relative;
+        top: 0px;
+        right: 0px;
+        border-radius: 100%;
+        background-color: red;
+        color: white;
+    }
+    .InjectTag {
+        position: relative;
+        top: 0px;
+        right: 0px;
+        border-radius: 100%;
+        background-color: grey;
+        color: white;
+    }
+    .FinishTag {
+        position: relative;
+        top: 0px;
+        right: 0px;
+        border-radius: 100%;
+        background-color: grey;
+        color: white;
+    }
+</style>
+</head>
+<body>
+
+</body>
+</html>

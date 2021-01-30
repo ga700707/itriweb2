@@ -1,0 +1,1885 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>審題系統</title>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/js/ExcelUpload.js"></script>
+
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="/res/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="/res/bootstrap/bootstrap.bundle.js"></script>
+
+
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+
+
+    <script src="http://oss.sheetjs.com/js-xlsx/xlsx.full.min.js"></script>
+    <script lang="javascript" src="xlsx/dist/xlsx.full.min.js"></script>
+
+    <style>
+        .table {
+            background-color: transparent;
+            table-layout: fixed;
+        }
+
+        .dataTables_info {
+            font-size: 1em;
+        }
+
+        .paginate_button {
+            font-size: 1em;
+
+        }
+
+        .word {
+            font-size: 1em;
+        }
+
+        .nav-link {
+            color: black;
+        }
+
+        .nav-link.active {
+            color: white;
+        }
+    </style>
+    <script>
+        var formData = new FormData();
+        var dataTables;
+        var EditExampleContent = [];
+        var EditItem = 0;
+        var hideExamplearray = [];
+        var hideExamarray = [];
+        var ReturnArray = [];
+        var examId = 0;
+        $(document).ready(function () {
+
+
+
+            $.each(LevelData, function (key, value) { // generate dropdown list from memberData.js 
+                $("#txtlevel").append('<option value=' + key + '>' + value + '</option>');
+            });
+            ChangeCategory();
+
+            dataTables = $('#ExamTable').DataTable({
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/exam/GetAll",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Level = $("#txtlevel").val();
+                        d.Category = $("#txtcategory").val();
+                        d.AccountId = getCookie("id");
+                        d.GroupId = getCookie("GroupId");
+                        return JSON.stringify(d)
+                    }
+                },
+                "rowCallback": function (row, data) {
+                    //InitModal();
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'groupId' },
+                    { 'data': 'monitorGroupId' },
+                    { 'data': 'isUpload' },
+                    { 'data': 'number' },
+
+                    { 'data': 'proposition' },
+                    { 'data': 'level' },
+                    { 'data': 'category' },//5
+                    { 'data': 'reference' },
+                    { 'data': 'volume' },
+                    { 'data': 'class' },
+                    { 'data': 'theme' },
+                    { 'data': null },
+                ], "columnDefs": [{
+                    "targets": [0, 1, 2], // hidden column
+                    "visible": false
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        console.log(row);
+                        console.log(row.isUpload);
+                        var checked = (row.isUpload == 0) ? "未上傳" : "已上傳";
+                        return '<a href="javascript:void(0);" onclick="changeUpload(' + row.id + ',\'' + row.isUpload + '\');">' + checked + '</a>';
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        return LevelData[row.level];
+                    }
+
+                }, {
+                    "targets": 7,
+                    "render": function (data, type, row) {
+                        switch (row.level) {
+                            case 0:
+                            case 1:
+                                return CategoryA[row.category];
+                                break;
+                            case 2:
+                            case 3:
+                                return CategoryB[row.category];
+                                break;
+                            case 4:
+                            case 5:
+                                return CategoryC[row.category];
+                        }
+                    }
+
+                }, {
+                    "targets": 8,
+                    "render": function (data, type, row) {
+                        return TextBookData[row.reference];
+                    }
+
+                }, {
+                    "targets": 11,
+                    "render": function (data, type, row) {
+                        if (row.theme != null)
+                            return ThemeData[row.theme];
+                    }
+
+                }, {
+                    "targets": 12, // add edit buttononclick="recordChat(' + row.id + ')
+                    "render": function (data, type, row) {
+                        var html = "";
+                        html += '<a href="javascript:void(0);" onclick="DetailExampleContent(' + row.id + ')">詳細</a> '
+                        html += '| <a href="javascript:void(0);" onclick="EditExam(' + row.id + ')">編輯</a>'
+                        html += '| <a href="javascript:void(0);" onclick="DeleteExam(' + row.id + ')">刪除</a>'
+
+                        return html
+                    }
+                }],
+                "dom": '<"toolbar">frtip', // enable custommize toolbar elements
+                "language": { // change display text
+                    "info": " 目前顯示 _START_ 至 _END_ 筆，共計 _TOTAL_ 筆。",
+                    "paginate": {
+                        "first": "第一頁",
+                        "last": "最後一頁",
+                        "next": ">",
+                        "previous": "<"
+                    }
+                }
+
+            });
+            InitModal();
+        });
+
+        function GetExamTable() {
+            InitModal();
+            dataTables.draw();
+        }
+
+        function ChangeCategory() {
+            //$("#Level").empty();
+            $("#txtcategory").empty();
+            // $("#Reference").empty();
+
+            switch (parseInt($("#txtlevel").val())) {
+                case 0:
+                case 1:
+                    $.each(CategoryA, function (key, value) { // generate dropdown list from memberData.js 
+                        $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+                    });
+
+                    break;
+                case 2:
+                case 3:
+                    $.each(CategoryB, function (key, value) { // generate dropdown list from memberData.js 
+                        $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+                    });
+                    break;
+                case 4:
+                case 5:
+                    $.each(CategoryC, function (key, value) { // generate dropdown list from memberData.js 
+                        $("#txtcategory").append('<option value=' + key + '>' + value + '</option>');
+                    });
+
+                    break;
+            }
+        }
+
+        function changeUpload(id, isUpload) { // 變更狀態
+            var msg = (isUpload == 0) ? "上傳" : "取消上傳";
+            var confirmStatus = confirm("是否" + msg + "此考題?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/exam/TurnUpload",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+
+                    data: JSON.stringify({
+                        "id": id
+                    }),
+                    success: function () {
+                        InitModal();
+                        dataTables.draw();
+                    }
+                });
+            }
+        }
+        function DeleteExam(id) { // 變更狀態
+            var confirmStatus = confirm("是否刪除?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/example/Delete",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+
+                    data: JSON.stringify({
+                        "id": id
+                    }),
+                    success: function () {
+                        ReturnArray.push(id);
+                        console.log(ReturnArray);
+                        dataTables.draw();
+                        $("#DeleteReturn").attr("disabled", false);
+                    }
+                });
+            }
+        }
+        function DeleteReturn() { // 變更狀態
+            var confirmStatus = confirm("確定返回?");
+            if (confirmStatus) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("token") },
+                    url: webApiUrl + "/example/DeleteReturn",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+
+                    data: JSON.stringify({
+                        "IdArray": ReturnArray
+                    }),
+                    success: function () {
+                        dataTables.draw();
+                        $("#DeleteReturn").attr("disabled", true);
+
+
+                    }
+                });
+            }
+        }
+        /// Function 
+        function DetailExampleContent(id) {
+            examId = id
+            $('#DetailExample').DataTable({
+                "lengthMenu": [[1, 2, 3], [1, 2, 3]],
+                "searching": false,
+                "ordering": false,
+                "serverSide": true,
+                "processing": true,
+                "lengthChange": false,
+                "paging": false,
+
+                "destroy": true,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/exam/GetExamDetail",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.Id = examId
+                        return JSON.stringify(d)
+                    },
+                },
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'level' },
+                    { 'data': 'category' },
+                    { 'data': 'reference' },
+                    { 'data': 'volume' },
+                    { 'data': 'class' },   //5
+                    { 'data': 'theme' },
+                    { 'data': 'txtExampleGroup' },
+                    { 'data': 'picExampleGroup' },
+                    { 'data': 'voiceExampleGroup' },
+                    { 'data': 'picExampleGroupMark' },
+                    { 'data': 'voiceExampleGroupMark' },
+
+                ], "columnDefs": [{
+                    "targets": hideExamarray, // hidden column
+                    "visible": false
+                }, {
+                    "targets": 1,
+                    "render": function (data, type, row) {
+                        return LevelData[row.level];
+                    }
+                }, {
+                    "targets": 2,
+                    "render": function (data, type, row) {
+                        switch (row.level) {
+                            case 0:
+                            case 1:
+                                return CategoryA[row.category];
+                                break;
+                            case 2:
+                            case 3:
+                                return CategoryB[row.category];
+                                break;
+                            case 4:
+                            case 5:
+                                return CategoryC[row.category];
+                        }
+                    }
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        return TextBookData[row.reference];
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        return ThemeData[row.theme];
+                    }
+                }, {
+                    "targets": 8,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExampleGroup != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExampleGroup + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleGroupMark != null)
+                            html += '<a>備註 :' + row.picExampleGroupMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        html += '</div>'
+                        return html
+                    }
+                }],
+
+            });
+            $('#DetailExampleContent').DataTable({
+                "searching": false,
+                "ordering": false,
+                "lengthChange": false,
+                "DeferRender": true,
+                "paging": false,
+                "destroy": true,
+                "info": false,
+                "ajax": {
+                    "headers": {
+                        'Authorization': getCookie("token")
+                    },
+                    "type": "POST",
+                    url: parent.webApiUrl + "/exam/GetExampleContent",
+                    contentType: "application/json",
+                    data: function (d) {
+                        d.examId = examId;
+                        return JSON.stringify(d)
+                    },
+                },
+
+                "columns": [
+                    { 'data': 'id' },
+                    { 'data': 'examId' },
+                    { 'data': 'txtExample' },
+                    { 'data': 'picExample' },
+                    { 'data': 'voiceExample' },
+                    { 'data': 'txtA' },    //5
+                    { 'data': 'picA' },
+                    { 'data': 'voiceA' },
+                    { 'data': 'txtB' },
+                    { 'data': 'picB' },
+                    { 'data': 'voiceB' },//10
+                    { 'data': 'txtC' },
+                    { 'data': 'picC' },
+                    { 'data': 'voiceC' },
+                    { 'data': 'txtD' },
+                    { 'data': 'txtE' },//15
+                    { 'data': 'txtF' },
+                    { 'data': 'answer' },
+                    { 'data': 'picExampleMark' },
+                    { 'data': 'voiceExampleMark' },
+                    { 'data': 'picAmark' },
+                    { 'data': 'voiceAmark' },
+                    { 'data': 'picBmark' },
+                    { 'data': 'voiceBmark' },
+                    { 'data': 'picCmark' },
+                    { 'data': 'voiceCmark' },
+                ], "columnDefs": [{
+                    "targets": hideExamplearray.concat([18, 19, 20, 21, 22, 23, 24, 25]), // hidden column
+                    "visible": false
+                }, {
+                    "targets": 3,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picExample != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picExample + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picExampleMark != null)
+                            html += '<a>備註 :' + row.picExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 4,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceExample != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceExample + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceExampleMark != null)
+                            html += '<a>備註 :' + row.voiceExampleMark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 6,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picA != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picA + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picAmark != null)
+                            html += '<a>備註 :' + row.picAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 7,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceA != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceA + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceAmark != null)
+                            html += '<a>備註 :' + row.voiceAmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 9,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picB != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picB + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picBmark != null)
+                            html += '<a>備註 :' + row.picBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 10,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceB != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceB + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceBmark != null)
+                            html += '<a>備註 :' + row.voiceBmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                }, {
+                    "targets": 12,
+                    "render": function (data, type, row) {
+                        var html = ""
+
+                        html += '<div class="row">'
+                        if (row.picC != null)
+                            html += '<img class="img-rounded"  src="' + "data:image;base64," + row.picC + '"   width="75" height="80" />'
+                        html += '<div class="w-100"></div>'
+                        if (row.picCmark != null)
+                            html += '<a>備註 :' + row.picCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+
+                        return html
+                    }
+                }, {
+                    "targets": 13,
+                    "render": function (data, type, row) {
+                        var html = "";
+
+                        html += '<div class="row">'
+                        if (row.voiceC != null)
+                            html += '<audio controls=""  src="' + "data:audio/wav;base64," + row.voiceC + '"  ></audio>'
+                        html += '<div class="w-100"></div>'
+                        if (row.voiceCmark != null)
+                            html += '<a>備註 :' + row.voiceCmark + '</a>'
+                        else
+                            html += '<a>備註 :無</a>'
+                        return html
+                    }
+                },{
+                    "targets": 17,
+                    "render": function (data, type, row) {
+                        return AnswerChoice[row.answer];
+                    }
+                },],
+            });
+
+            $('#modalRecord').modal('show');
+        }
+        function CreateExam() { // 建立會員初始化
+            $("#CreateModal1").modal('show');
+        }
+        function CreateNextPage() { // 建立初始化
+            formData = new FormData();
+            var check = false;
+            $("#Create1-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+            $("#Create1-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length == 0)
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+            formData.append("GroupId", getCookie("GroupId"));
+            formData.append("AccountId", getCookie("id"));
+            $("#Create1-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "")
+                    formData.append($(this)[0].id.replace("Create", ""), $(this)[0].value)
+            });
+            $("#Create1-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0)
+                    formData.append($(this)[0].id.replace("Create", "").replace("Upload", ""), $(this)[0].files[0])
+            });
+
+            $("#CreateModal2").modal('show');
+        }
+        function CreateNextItem() { // 建立初始化
+            //$('#modalCreate').modal('hide');
+            var check = false;
+            $("#Create2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+            $("#Create2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length == 0)
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+            formData.append("Length", length);
+            $("#Create2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "") {
+                    formData.append($(this)[0].id.replace("Create", ""), $(this)[0].value)
+                    $(this).val("");
+                }
+                else
+                    formData.append($(this)[0].id.replace("Create", ""), " ")
+
+            });
+            $("#Create2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0) {
+                    formData.append($(this)[0].id.replace("Create", "").replace("Upload", ""), $(this)[0].files[0])
+                    $(this).removeAttr('src');
+                }
+
+
+            });
+        }
+        function CreateExamContent() {
+            var check = false;
+            $("#Create2-modal-panel").find(":text,select,textarea").each(function () {
+                console.log($(this));
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+            $("#Create2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length == 0)
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+
+            $("#Create2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "") {
+                    formData.append($(this)[0].id.replace("Create", ""), $(this)[0].value)
+                    $(this).val("");
+                }
+                else
+                    formData.append($(this)[0].id.replace("Create", ""), " ")
+
+            });
+            $("#Create2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0) {
+                    formData.append($(this)[0].id.replace("Create", "").replace("Upload", ""), $(this)[0].files[0])
+                    $(this).removeAttr('src');
+                }
+            });
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/orderoutsource/CreateExam",
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function () {
+                    dataTables.draw();
+                    //InitModal();
+                    $("#Create1-modal-panel").find(":text,select,textarea").each(function () {
+                        $(this).val("");
+                    });
+                    $("#Create1-modal-panel").find("img,audio").each(function () {
+                        $(this).removeAttr('src');
+                    });
+                    $("#Create2-modal-panel").find(":text,select,textarea").each(function () {
+                        $(this).val("");
+                    });
+                    $("#Create2-modal-panel").find("img,audio").each(function () {
+                        $(this).removeAttr('src');
+                    });
+
+                    $('#CreateModal1').modal('hide');
+                    $('#CreateModal2').modal('hide');
+                    InitModal();
+                },
+            })
+        }
+        function EditExam(id) {
+            examId = id;
+            $("#EditModal1").modal('show');
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/exam/GetExamDetail",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "Id": examId
+                }),
+                success: function (e) {
+                    $("#volumeEdit").val(e.data[0]["volume"]);
+                    $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                        $('#' + $(this)[0].id).val(e.data[0][$(this)[0].id.replace("Edit", "")]);
+                    });
+                    $("#Edit1-modal-panel").find("img").each(function () {
+                        if (e.data[0][$(this)[0].id.replace("Edit", "")] != null) {
+                            $('#' + $(this)[0].id).attr("src", "data:image;base64," + e.data[0][$(this)[0].id.replace("Edit", "")]);
+                        }
+                        else
+                            $('#' + $(this)[0].id).attr("src", "/res/img/upload_image.png");
+                    });
+                }
+            });
+        }
+        function EditNextPage() {
+            formData = new FormData();
+            formData.append("GroupId", getCookie("GroupId"));
+            formData.append("AccountId", getCookie("id"));
+            formData.append("ExamId", examId);
+            var check = false;
+            $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+
+            $("#Edit1-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == "http://" + window.location.host + "/res/img/upload_image.png")
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+
+            $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "")
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].value)
+                else
+                    formData.append($(this)[0].id.replace("Edit", ""), "")
+            });
+
+            $("#Edit1-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0)
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].files[0])
+            });
+
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/exam/GetExampleContent",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "examId": examId
+                }),
+                success: function (e) {
+                    if (e.data.length == 0) {
+                        alert("題目有問題");
+                        return;
+                    }
+
+                    EditItem = 0;
+                    EditExampleContent = e.data;
+
+                    $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                        $('#' + $(this)[0].id).val(e.data[0][$(this)[0].id.replace("Edit", "")]);
+                    });
+
+
+                    $("#Edit2-modal-panel").find("img").each(function () {
+                        if (e.data[0][$(this)[0].id.replace("Edit", "")] != null)
+                            $('#' + $(this)[0].id).attr("src", "data:image;base64," + e.data[0][$(this)[0].id.replace("Edit", "")]);
+                        else
+                            formData.append($(this)[0].id.replace("Edit", ""), "")
+                    });
+
+                    $("#Edit2-modal-panel").find("audio").each(function () {
+                        $('#' + $(this)[0].id).attr("src", "data:audio/wav;base64," + e.data[0][$(this)[0].id.replace("Edit", "")]);
+                    });
+                    console.log(EditExampleContent.length);
+                    console.log(EditItem);
+                    if (EditExampleContent.length - 1 == EditItem)
+                        $('#EditNextItemBtn').hide();
+                    else
+                        $('#EditNextItemBtn').show();
+                    $("#EditModal2").modal('show');
+
+                }
+            });
+        }
+        function EditNextItem() { // 建立初始化
+            EditItem++;
+            var check = false;
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+            $("#Edit2-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == "http://" + window.location.host + "/res/img/upload_image.png")
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+            formData.append("Length", length);
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "") {
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].value)
+                    $(this).val("");
+                }
+                else
+                    formData.append($(this)[0].id.replace("Edit", ""), " ")
+
+            });
+
+            $("#Edit2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0) {
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].files[0])
+                    $(this).removeAttr('src');
+                }
+            });
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                $('#' + $(this)[0].id).val(EditExampleContent[EditItem][$(this)[0].id.replace("Edit", "")]);
+            });
+
+            $("#Edit2-modal-panel").find("img").each(function () {
+                $('#' + $(this)[0].id).attr("src", "data:image;base64," + EditExampleContent[EditItem][$(this)[0].id.replace("Upload", "").replace("Edit", "")]);
+            });
+
+            $("#Edit2-modal-panel").find("audio").each(function () {
+                $('#' + $(this)[0].id).attr("src", "data:audio/wav;base64," + EditExampleContent[EditItem][$(this)[0].id.replace("Upload", "").replace("Edit", "")]);
+            });
+
+            if (EditExampleContent.length - 1 == EditItem)
+                $('#EditNextItemBtn').hide();
+            else
+                $('#EditNextItemBtn').show();
+        }
+        function EditExamContent() {
+            var check = false;
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value == "")
+                    check = true;
+            });
+            $("#Edit2-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == "http://" + window.location.host + "/res/img/upload_image.png")
+                    check = true;
+            });
+
+            if (check) {
+                var confirmStatus = confirm("你有未輸入的資料是否繼續送出?");
+                if (!confirmStatus) return false;
+            }
+
+            $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                if ($(this)[0].value != "") {
+                    formData.append($(this)[0].id.replace("Edit", ""), $(this)[0].value)
+                }
+                else
+                    formData.append($(this)[0].id.replace("Edit", ""), " ")
+
+            });
+            $("#Edit2-modal-panel").find(":file").each(function () {
+                if ($(this)[0].files.length != 0) {
+                    formData.append($(this)[0].id.replace("Edit", "").replace("Upload", ""), $(this)[0].files[0])
+                }
+            });
+
+            // 建立初始化
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/example/UpdateExam",
+                cache: false,
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function () {
+                    dataTables.draw();
+                    //InitModal();
+                    $("#Edit1-modal-panel").find(":text,select,textarea").each(function () {
+                        $(this).val("");
+                    });
+                    $("#Edit1-modal-panel").find("img,audio").each(function () {
+                        $(this).removeAttr('src');
+                    });
+                    $("#Edit2-modal-panel").find(":text,select,textarea").each(function () {
+                        $(this).val("");
+                    });
+                    $("#Edit2-modal-panel").find("img,audio").each(function () {
+                        $(this).removeAttr('src');
+                    });
+
+                    $('#EditModal1').modal('hide');
+                    $('#EditModal2').modal('hide');
+                },
+            })
+        }
+
+
+        function InitModal(level, category) {
+            // $("#Level").empty();
+            // $("#categoryCreate").empty();
+            // $("#Reference").empty();
+
+            switch (parseInt($("#txtlevel").val())) {
+                case 0:
+                case 1:
+                    switch (parseInt($("#txtcategory").val())) {
+                        case 0:
+                            InitVoiceA1();
+                            break;
+                        case 1:
+                            InitVoiceA2();
+                            break;
+                        case 2:
+                            InitVoiceA3();
+                            break;
+                        case 3:
+                            InitVoiceA4();
+                            break;
+                        case 4:
+                            InitReadA1();
+                            break;
+                        case 5:
+                            InitReadA2();
+                            break;
+                        case 6:
+                            InitReadA3();
+                            break;
+                        case 7:
+                            InitReadA4();
+                            break;
+                        case 8:
+                            InitReadA5();
+                            break;
+                    };
+                    break;
+                case 2:
+                case 3:
+                    switch (parseInt($("#txtcategory").val())) {
+                        case 0:
+                            InitVoiceB1();
+                            break;
+                        case 1:
+                            InitVoiceB2();
+                            break;
+                        case 2:
+                            InitReadB1();
+                            break;
+                        case 3:
+                            InitReadB2();
+                            break;
+                    };
+                    break;
+                case 4:
+                case 5:
+                    switch (parseInt($("#txtcategory").val())) {
+                        case 0:
+                            InitVoiceC1();
+                            break;
+                        case 1:
+                            InitVoiceC2();
+                            break;
+                        case 2:
+                            InitVoiceC3();
+                            break;
+                        case 3:
+                            InitVoiceC4();
+                            break;
+                        case 4:
+                            InitReadC1();
+                            break;
+                        case 5:
+                            InitReadC2();
+                            break;
+
+                    };
+                    break;
+            };
+            dataTables.draw();
+        }
+
+
+        function InitVoiceA1() {
+
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1聽力測驗-第一部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2聽力測驗-第一部分");
+
+            $("#Create1-modal-panel").load("/res/modalCreate/AC1-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC1-2.html");
+
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC1-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC1-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC1.bmp");
+
+            hideExamplearray = [0, 1, 2, 5, 6, 8, 9, 11, 12, 14, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+        function InitVoiceA2() {
+
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1聽力測驗-第二部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2聽力測驗-第二部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/AC2-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC2-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC2-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC2-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC2.bmp");
+            hideExamplearray = [0, 1, 2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+        function InitVoiceA3() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1聽力測驗-第三部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2聽力測驗-第三部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/AC3-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC3-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC3-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC3-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC3.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+
+        }
+        function InitVoiceA4() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1聽力測驗-第四部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2聽力測驗-第四部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/AC4-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC4-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC4-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC4-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC4.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+
+        }
+        function InitReadA1() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第一部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第一部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/AC5-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC5-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC5-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC5-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC5.bmp");
+
+            hideExamplearray = [0, 1, 3, 4, 5, 7, 8, 10, 11, 13, 14, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+
+        }
+        function InitReadA2() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第二部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第二部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/AC6-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC6-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC6-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC6-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC6.bmp");
+            hideExamplearray = [0, 1, 2, 4, 6, 7, 9, 10, 12, 13, 14, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+        function InitReadA3() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第三部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第三部分");
+
+            $("#Create1-modal-panel").load("/res/modalCreate/AC7-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC7-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC7-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC7-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC7.bmp");
+
+            hideExamplearray = [0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 14, 15, 16];
+            hideExamarray = [0, 7, 9, 10, 11];
+        }
+        function InitReadA4() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第四部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第四部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/AC8-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC8-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC8-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC8-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC8.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 4, 6, 7, 9, 10, 12, 13];
+            hideExamarray = [0, 8, 9, 10, 11];
+        }
+        function InitReadA5() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/AC9-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/AC9-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/AC9-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/AC9-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/AC9.bmp");
+
+            hideExamplearray = [0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+
+        function InitVoiceB1() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增B1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增B1閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/BC1-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/BC1-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/BC1-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/BC1-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/BC1.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+
+        function InitVoiceB2() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/BC2-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/BC2-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/BC2-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/BC2-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/BC2.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+
+        function InitReadB1() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/BC3-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/BC3-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/BC3-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/BC3-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/BC3.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 8, 9, 10, 11];
+        }
+
+        function InitReadB2() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/BC4-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/BC4-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/BC4-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/BC4-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/BC4.bmp");
+
+            hideExamplearray = [0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 9, 10, 11];
+        }
+
+        function InitVoiceC1() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/CC1-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/CC1-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/CC1-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/CC1-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/CC1.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+
+        function InitVoiceC2() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/CC2-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/CC2-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/CC2-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/CC2-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/CC2.bmp");
+
+
+            hideExamplearray = [0, 1, 2, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 8, 10, 11];
+        }
+
+        function InitVoiceC3() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/CC3-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/CC3-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/CC3-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/CC3-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/CC3.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 7, 8, 9, 10, 11];
+        }
+
+        function InitVoiceC4() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/CC4-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/CC4-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/CC4-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/CC4-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/CC4.bmp");
+            hideExamplearray = [0, 1, 2, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 8, 10, 11];
+        }
+
+        function InitReadC1() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/CC5-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/CC5-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/CC5-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/CC5-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/CC5.bmp");
+
+            hideExamplearray = [0, 1, 2, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 8, 9, 10, 11];
+        }
+
+        function InitReadC2() {
+
+            if (parseInt($("#Level").val()) == 0)
+                $('#modalCreateExamContentLabel').text("新增A1閱讀測驗-第五部分");
+            else
+                $('#modalCreateExamContentLabel').text("新增A2閱讀測驗-第五部分");
+            $("#Create1-modal-panel").load("/res/modalCreate/CC6-1.html");
+            $("#Create2-modal-panel").load("/res/modalCreate/CC6-2.html");
+            $("#Edit1-modal-panel").load("/res/modalEdit/CC6-1.html");
+            $("#Edit2-modal-panel").load("/res/modalEdit/CC6-2.html");
+
+            $("#ReferImage").attr("src", "/res/img/example/CC6.bmp");
+
+            hideExamplearray = [0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 16];
+            hideExamarray = [0, 9, 10, 11];
+        }
+
+
+        $(function () {
+            $('#CreateModal1').on('hide.bs.modal', function () {
+                $("#ReferImageModal").modal('hide');
+                $(".modal_right").css("left", "0%");
+
+            })
+            $('#EditModal1').on('hide.bs.modal', function () {
+                $("#ReferImageModal").modal('hide');
+                $(".modal_right").css("left", "0%");
+
+            })
+
+            $("#Level").change(function () {
+                $("#txtlevel").val($("#Level").val());
+                $("#Category").empty();
+                $("#txtcategory").empty();
+
+                ChangeCategory();
+            });
+            $("#Category").change(function () {
+                $("#txtcategory").val($("#Category").val());
+                InitModal();
+            });
+
+            $("#ExcelFile").each(function () {
+                $(this).attr("src", "/res/img/Excel01.png");
+            });
+            $("#UploadExcelFile").change(function () {
+                $(this).attr("src", "/res/img/Excel_suc.png");
+            });
+            $("#ImageFile").each(function () {
+                if ($(this)[0].src == window.location.href + '#')
+                    $(this).attr("src", "/res/img/Image.png");
+            });
+
+            $("#VoiceFile").each(function () {
+                if ($(this)[0].src == window.location.href + '#')
+                    $(this).attr("src", "/res/img/Voice.png");
+            });
+
+        });
+
+
+        function getObjectURL(file) {
+            var url = null;
+            if (window.createObjectURL != undefined) { // basic  
+                url = window.createObjectURL(file);
+            } else if (window.URL != undefined) { // mozilla(firefox)  
+                url = window.URL.createObjectURL(file);
+            } else if (window.webkitURL != undefined) { // webkit or chrome  
+                url = window.webkitURL.createObjectURL(file);
+            }
+            return url;
+        }
+
+
+        function fnExcelReport() {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("token") },
+                url: webApiUrl + "/exam/GetAllExamToOffice ",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "Category": $("#txtcategory").val(),
+                    "Level": $("#txtlevel").val(),
+                    "GroupId": getCookie("GroupId")
+
+                }),
+                success: function (e) {
+                    var allData = [];
+                    console.log(e);
+                    for (var i = 0; i < e.length; i++) {
+                        var table = {
+                            "level": LevelData[e[i].level],
+                            "category": (e[i].level <= 1) ? CategoryA[e[i].category] : CategoryC[e[i].category],
+                            "reference": TextBookData[e[i].reference],
+                            "volume": e[i].volume,
+                            "class": e[i].class
+                        }
+                        allData.push(table);
+                    }
+
+                    var JSonToCSV = {
+                        /*
+                        * obj是一個物件，其中包含有：
+                        * ## data 是匯出的具體資料
+                        * ## fileName 是匯出時儲存的檔名稱 是string格式
+                        * ## showLabel 表示是否顯示錶頭 預設顯示 是布林格式
+                        * ## columns 是表頭物件，且title和key必須一一對應，包含有
+                        title:[], // 表頭展示的文字
+                        key:[], // 獲取資料的Key
+                        formatter: function() // 自定義設定當前資料的 傳入(key, value)
+                        */
+                        setDataConver: function (obj) {
+                            var bw = this.browser();
+                            if (bw['ie'] < 9) return; // IE9以下的
+                            var data = obj['data'],
+                                ShowLabel = typeof obj['showLabel'] === 'undefined' ? true : obj['showLabel'],
+                                fileName = (obj['fileName'] || 'UserExport') + '.csv',
+                                columns = obj['columns'] || {
+                                    title: [],
+                                    key: [],
+                                    formatter: undefined
+                                };
+                            var ShowLabel = typeof ShowLabel === 'undefined' ? true : ShowLabel;
+                            var row = "", CSV = '', key;
+                            // 如果要現實表頭文字
+                            if (ShowLabel) {
+                                // 如果有傳入自定義的表頭文字
+                                if (columns.title.length) {
+                                    columns.title.map(function (n) {
+                                        row += n + ',';
+                                    });
+                                } else {
+                                    // 如果沒有，就直接取資料第一條的物件的屬性
+                                    for (key in data[0]) row = key + ',';
+                                }
+                                row = row.slice(0, -1); // 刪除最後一個,號，即a,b, => a,b
+                                CSV = row + '\r\n'; // 新增換行符號
+                            }
+                            // 具體的資料處理
+                            data.map(function (n) {
+                                row = '';
+                                // 如果存在自定義key值
+                                if (columns.key.length) {
+                                    columns.key.map(function (m) {
+                                        row += '"' + (typeof columns.formatter == 'function' ? columns.formatter(m, n[m]) || n[m] : n[m]) + '",';
+                                    });
+                                } else {
+                                    for (key in n) {
+                                        row = '"' + (typeof columns.formatter == 'function' ? columns.formatter(key, n[key]) || n[key] : n[key]) + '",';
+                                    }
+                                }
+                                row.slice(0, row.length - 1); // 刪除最後一個,
+                                CSV += row + '\r\n'; // 新增換行符號
+                            });
+                            if (!CSV) return;
+                            console.log(CSV);
+                            this.SaveAs(fileName, CSV);
+                        },
+                        SaveAs: function (fileName, csvData) {
+                            var bw = this.browser();
+                            if (!bw['edge'] || !bw['ie']) {
+                                var alink = document.createElement("a");
+                                alink.id = "linkDwnldLink";
+                                alink.href = this.getDownloadUrl(csvData);
+                                document.body.appendChild(alink);
+                                var linkDom = document.getElementById('linkDwnldLink');
+                                linkDom.setAttribute('download', fileName);
+                                linkDom.click();
+                                document.body.removeChild(linkDom);
+                            }
+                            else if (bw['ie'] >= 10 || bw['edge'] == 'edge') {
+                                var _utf = "\uFEFF";
+                                var _csvData = new Blob([_utf + csvData], {
+                                    type: 'text/csv'
+                                });
+                                navigator.msSaveBlob(_csvData, fileName);
+                            }
+                            else {
+                                var oWin = window.top.open("about:blank", "_blank");
+                                oWin.document.write('sep=,\r\n' + csvData);
+                                oWin.document.close();
+                                oWin.document.execCommand('SaveAs', true, fileName);
+                                oWin.close();
+                            }
+                        },
+                        getDownloadUrl: function (csvData) {
+                            var _utf = "\uFEFF"; // 為了使Excel以utf-8的編碼模式，同時也是解決中文亂碼的問題
+                            if (window.Blob && window.URL && window.URL.createObjectURL) {
+                                var csvData = new Blob([_utf + csvData], {
+                                    type: 'text/csv'
+                                });
+                                return URL.createObjectURL(csvData);
+                            }
+                            // return 'data:attachment/csv;charset=utf-8,'   _utf   encodeURIComponent(csvData);
+                        },
+                        browser: function () {
+                            var Sys = {};
+                            var ua = navigator.userAgent.toLowerCase();
+                            var s;
+                            (s = ua.indexOf('edge') !== - 1 ? Sys.edge = 'edge' : ua.match(/rv:([\d.] )\) like gecko/)) ? Sys.ie = s[1] :
+                                (s = ua.match(/msie ([\d.] )/)) ? Sys.ie = s[1] :
+                                    (s = ua.match(/firefox\/([\d.] )/)) ? Sys.firefox = s[1] :
+                                        (s = ua.match(/chrome\/([\d.] )/)) ? Sys.chrome = s[1] :
+                                            (s = ua.match(/opera.([\d.] )/)) ? Sys.opera = s[1] :
+                                                (s = ua.match(/version\/([\d.] ).*safari/)) ? Sys.safari = s[1] : 0;
+                            return Sys;
+                        }
+                    };
+
+                    JSonToCSV.setDataConver({
+                        data: allData,
+                        fileName: 'test',
+                        columns: {
+                            title: ['命題級數', '題目類別', '來源教材', '冊數', '課數'],
+                            key: ['level', 'category', 'reference', 'volume', 'class'],
+                            formatter: function (n, v) {
+                                if (n === 'amont' && !isNaN(Number(v))) {
+                                    v = v + '';
+                                    v = v.split('.');
+                                    v[0] = v[0].replace(/(\d)(?=(?:\d{3}) $)/g, '$1,'); // 千分位的設定
+                                    return v.join('.');
+                                }
+                                if (n === 'proportion') {
+                                    return v + '%';
+                                }
+                            }
+
+                        }
+                    });
+
+
+                }
+            });
+        }
+
+        function showReferenceModal() {
+            if ($('#ReferImageModal').hasClass('show')) {
+                $("#ReferImageModal").modal('hide');
+                $(".modal_right").css("left", "0%");
+            }
+            else {
+                $("#ReferImageModal").modal('show');
+                $(".modal_right").css("left", "25%");
+            }
+
+            $("#ReferImage").attr("width", "100%");
+            $("#ReferImage").attr("height", "100%");
+            $("#ReferImage").show();
+        }
+
+    </script>
+
+</head>
+<style>
+    .modal_left {
+        left: -20%;
+        outline: none;
+
+    }
+
+    .modal_right {
+        left: 0%;
+        overflow-y: "hidden";
+    }
+</style>
+
+<body>
+
+    <h2>編輯考題</h2>
+    <div>
+        <ul class="nav">
+            <li class="nav-item" style="background-color:rgb(227, 168, 235)"
+                onclick="changeContent('編輯考題頁面','UpLoadFile','EditExam')">
+                <a href="EditExam.html" class="nav-link active"><span data-feather="null"></span>編輯考題頁面 </a></li>
+            <li class="nav-item " style="background-color:gainsboro"
+                onclick="changeContent('審查結果(通過)頁面','UpLoadFile','ResulSuccesstExam')">
+                <a href="ResulSuccesstExam.html" class="nav-link"><span data-feather="null"></span>審查結果(通過)頁面 </a></li>
+            <li class="nav-item" style="background-color:gainsboro"
+                onclick="changeContent('審查結果(未通過)頁面','UpLoadFile','ResulFailtExam')">
+                <a href="ResulFailExam.html" class="nav-link"><span data-feather="null"></span>審查結果(未通過)頁面 </a></li>
+        </ul>
+
+    </div>
+
+
+
+    <div class="form-group word">
+        <label for="txtlevel">命題級數</label>
+        <select onChange="ChangeCategory()" style="width:5%;" id="txtlevel">
+        </select>
+    </div>
+    <div class="form-group word">
+        <label for="txtcategory">題目類型</label>
+        <select style="width:15%;" id="txtcategory">
+        </select>
+
+
+        <button type="button" class="btn btn-outline-primary my-2 my-sm-0" onclick="GetExamTable();">送出</button>
+
+        <button type="button" class="btn btn-outline-primary my-2 my-sm-0"
+            onclick="$('#UploadExcelModal').modal('show');">Excel匯入</button>
+
+    </div>
+
+    <script>
+        /*
+        FileReader共有4種讀取方法：
+        1.readAsArrayBuffer(file)：將檔案讀取為ArrayBuffer。
+        2.readAsBinaryString(file)：將檔案讀取為二進位制字串
+        3.readAsDataURL(file)：將檔案讀取為Data URL
+        4.readAsText(file, [encoding])：將檔案讀取為文字，encoding預設值為'UTF-8'
+                     */
+        var wb;//讀取完成的資料
+        var rABS = false; //是否將檔案讀取為二進位制字串
+
+
+
+
+        // for (var key in worksheet) {
+        //    // v是读取单元格的原始值
+        //      console.log(key, key[0] === '!' ? worksheet[key] : worksheet[key].v);
+        // }
+
+        function readWorkbook(workbook) {
+            var sheetNames = workbook.SheetNames; // 工作表名称集合
+            var worksheet = workbook.Sheets[sheetNames[0]]; // 这里我们只读取第一张sheet
+            var csv = XLSX.utils.sheet_to_csv(worksheet);
+            document.getElementById('result').innerHTML = csv2table(csv);
+        }
+
+        // 将csv转换成简单的表格，会忽略单元格合并，在第一行和第一列追加类似excel的索引
+        function csv2table(csv) {
+            var html = '<table>';
+            var rows = csv.split('\n');
+            rows.pop(); // 最后一行没用的
+            rows.forEach(function (row, idx) {
+                var columns = row.split(',');
+                columns.unshift(idx + 1); // 添加行索引
+                if (idx == 0) { // 添加列索引
+                    html += '<tr>';
+                    for (var i = 0; i < columns.length; i++) {
+                        html += '<th>' + (i == 0 ? '' : String.fromCharCode(65 + i - 1)) + '</th>';
+                    }
+                    html += '</tr>';
+                }
+                html += '<tr>';
+                columns.forEach(function (column) {
+                    html += '<td>' + column + '</td>';
+                });
+                html += '</tr>';
+            });
+            html += '</table>';
+            return html;
+        }
+    </script>
+
+    <button class="float-left btn btn-outline-info my-2 my-sm-0" onclick="CreateExam()">新增題目</button>
+    <button id="DeleteReturn" disabled="disabled" class="float-left btn btn-outline-info my-2 my-sm-0"
+        onclick="DeleteReturn()">還原</button>
+
+
+
+    <!-- DataTables -->
+
+
+
+    <table id="ExamTable" class="word able table-striped table-sm" style="width:100%; ">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>groupId</th>
+                <th>命題學校</th>
+                <th>狀態</th>
+                <th>題目序號</th>
+                <th>命題者</th>
+                <th>命題級數</th>
+                <th>題目類別</th>
+                <th>來源教材</th>
+                <th>冊數</th>
+                <th>課數</th>
+                <th>領域主題</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+    </table>
+
+
+    <!-- Detail -->
+    <div class=" modal fade" id="modalRecord" tabindex="-1" role="dialog" aria-labelledby="modalRecordLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalRecordLabel"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table id="DetailExampleContent" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>examId</th>
+                                <th>題目內容</th>
+                                <th>題目圖檔</th>
+                                <th>題目音檔</th>
+                                <th>A文字</th>
+                                <th>A圖檔</th>
+                                <th>A音檔</th>
+                                <th>B文字</th>
+                                <th>B圖檔</th>
+                                <th>B音檔</th>
+                                <th>C文字</th>
+                                <th>C圖檔</th>
+                                <th>C音檔</th>
+                                <th>D文字</th>
+                                <th>E文字</th>
+                                <th>F文字</th>
+                                <th>答案</th>
+                                <th>picexamplemark</th>
+                                <th>voiceexamplemark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picAmark</th>
+                                <th>voiceAmark</th>
+                                <th>picCmark</th>
+                                <th>voiceCmark</th>
+                            </tr>
+
+                        </thead>
+                    </table>
+                    <table id="DetailExample" class="word table table-striped table-sm" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>命題級數</th>
+                                <th>題目類別</th>
+                                <th>來源教材</th>
+                                <th>冊數</th>
+                                <th>課數</th>
+                                <th>領域主題</th>
+                                <th>題組內容</th>
+                                <th>題組圖檔</th>
+                                <th>題組音檔</th>
+                                <th>picexamplegroupmark</th>
+                                <th>voiceexamplegroupmark</th>
+
+                            </tr>
+                        </thead>
+                    </table>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade modal_left" id="ReferImageModal" role="dialog" aria-labelledby="modalEditLabel">
+        <div class="modal-dialog  modal-xl" style="width:50em;" role="document">
+            <div class="modal-content">
+                <div class="form-group">
+                    <img class="img-rounded" src="#" id="ReferImage" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" role="dialog" aria-labelledby="modalCreateLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+            <div class="modal-content">
+                <div id="ExcelModal1"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" role="dialog" aria-labelledby="modalCreateLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+            <div class="modal-content">
+                <div id="ExcelModal2"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="UploadExcelModal" role="dialog" aria-labelledby="modalEditLabel">
+        <div class="modal-dialog  modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="btn-sm btn-outline-light btn-image">
+                            <img class="img-rounded" src="#" id="ExcelFile" width="200" height="200" />
+                            <input type="file" id="UploadExcelFile" style="display:none;" />
+                        </label>
+                        <label class="btn-sm btn-outline-light btn-image">
+                            <img class="img-rounded" src="#" id="ImageFile" width="200" height="200" />
+                            <input accept=".jpg" id="UploadImageFile" multiple="multiple" style="display:none;"
+                                type="file">
+                        </label>
+                        <label class="btn-sm btn-outline-light btn-image">
+                            <img class="img-rounded" src="#" id="VoiceFile" width="200" height="200" />
+                            <input accept=".mp3" id="UploadVoiceFile" style="display:none;" type="file">
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+                    <button id="SendExcel" type="button" class="btn btn-primary btn-sm" onclick="importf();">送出</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div class="word  modal fade modal_right" id="CreateModal1" role="dialog" aria-labelledby="modalCreateLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="word modal-title" id="modalCreateLabel">新增考題</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <button style="font-size:1.2em;" type="button" class="btn btn-primary btn-sm modal-button"
+                    onclick="showReferenceModal();">題目範例</button>
+                <div id="Create1-modal-panel"></div>
+            </div>
+        </div>
+    </div>
+    <div class="word  modal fade modal_right" id="CreateModal2" tabindex="-1" role="dialog"
+        aria-labelledby="modalCreateLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:30em;" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="word modal-title" id="modalCreateLabel2">新增考題</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <button style="font-size:1.2em;" type="button" class="btn btn-primary btn-sm modal-button"
+                    onclick="showReferenceModal();">題目範例</button>
+                <div id="Create2-modal-panel"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="word  modal fade modal_right" id="EditModal1" tabindex="-1" role="dialog"
+        aria-labelledby="modalEditLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:25em;" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="word modal-title" id="modalEditLabel">編輯考題</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <button style="font-size:1.2em;" type="button" class="btn btn-primary btn-sm modal-button"
+                    onclick="showReferenceModal();">題目範例</button>
+                <div id="Edit1-modal-panel"></div>
+            </div>
+        </div>
+    </div>
+    <div class="word  modal fade modal_right" id="EditModal2" tabindex="-1" role="dialog"
+        aria-labelledby="modalEditLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" style="width:28em;" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="word modal-title" id="modalEditLabel2">編輯考題</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <button style="font-size:1.2em;" type="button" class="btn btn-primary btn-sm modal-button"
+                    onclick="showReferenceModal();">題目範例</button>
+                <div id="Edit2-modal-panel"></div>
+            </div>
+        </div>
+    </div>
+    <script src="//cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+</body>
+
+</html>

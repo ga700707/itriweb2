@@ -1,0 +1,96 @@
+<div class="container">
+	<div class="row text-center">
+		<div class="col-12">
+		</div>
+		<dvi class="container h-120">
+
+			<!-- left frame -->
+
+			<div class="d-flex justify-content-center">
+				<div class="card mt-8 col-12 animated bounceInDown myForm">
+					<div class="card-header">
+						<h4>人員-編輯頁面</h4>
+					</div>
+					<div class="card-body">
+						<form name="build">
+							<div id="dynamic_container">
+								<!-- 職員的工號
+								職員的本名
+								職員的專長
+								職員的副職責
+								職員的就職日
+								職員的離職日 -->
+								<div class="form-group row">
+									<input type="hidden" class="form-control form-control-sm col-sm-8" id="memberIdEdit">
+								</div>
+								<div>姓名</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-phone-square"></i></span>
+									</div> -->
+									<input type="text" placeholder="" id="memberNameEdit" name="memberName"
+										class="form-control" />
+								</div>
+
+								<div>工號</div>
+								<div class="input-group">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-user-graduate"></i></span>
+									</div> -->
+									<input type="text" placeholder="" class="form-control" id="memberNoEdit"name="memberNo"/>
+								</div>
+							
+								<div>專長</div>
+								<div class="input-group mt-3">
+									<!-- <div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div> -->
+									<input type="text" placeholder="" class="form-control"id="memberDutiesEdit"name="memberDuties" />
+								</div>
+								<!-- <div>副職責</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" class="form-control"id="memberSubDutiesEdit"name="memberSubDuties" />
+								</div> -->
+								<!-- <div>就職日</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" class="form-control"id="memberHiringDayEdit"name="memberHiringDay" />
+								</div>
+								<div>離職日</div>
+								<div class="input-group mt-3">
+									<div class="input-group-prepend">
+										<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+									</div>
+									<input type="text" placeholder="" class="form-control"id="memberFiringDayEdit"name="memberFiringDay" />
+								</div> -->
+							</div>
+					</div>
+					<div class="card-footer">
+						<!-- <div>時間</div>
+						<div class="input-group mt-3" style="width:120px;float:left;margin:20px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="起始" class="form-control" />
+						</div>
+						<div class="input-group mt-3" style="width:120px;margin:10px">
+							<div class="input-group-prepend">
+								<span class="input-group-text br-15"><i class="fas fa-at"></i></span>
+							</div>
+							<input type="email" placeholder="結束" class="form-control" />
+						</div> -->
+					</div>
+					<input type="button" class="btn btn-success btn-lg float-right submit_btn" value="儲存"
+						onclick="memberEditContent()" />
+					</form>
+				</div>
+
+
+			</div>
+	</div>
+</div>

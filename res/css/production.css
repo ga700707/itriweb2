@@ -1,0 +1,71 @@
+.backgorund-default:focus,
+.backgorund-default:hover {
+    transition: all 0.4s ease-in-out;
+    cursor: default;
+    box-shadow: 0 0 16px #F5F5F5;
+}
+.searchFrame{
+	width:2px;
+	height:360px;
+	background-color: beige
+}
+
+
+.createBtn{
+    font-style: color;
+	width:140px;
+	height:40px;
+	background-color: rgb(0, 0, 0)
+}
+.CreateFont{
+    font-family:DFKai-sb;
+    color:#888888;
+  }
+.Block{
+    margin:0px 2%;
+    width:15%;
+}
+.BlockTable{
+    padding:0px 2%;
+    width:40%;
+    margin-left: 20%;
+    margin-right: 20%;
+    position: relative;
+    left: 10%;
+}
+.modal-content{
+    width: 130%;
+    position: relative;
+    right: 0%;
+   
+}
+.g .modal-content{
+    width: 80%;
+    position: relative;
+    left: 8%;
+}
+
+.TableStyle{
+    padding:0px 2%;
+    width:21%;
+    margin: 1.5%;
+}
+@media screen and (max-width:1200px){
+    .modal-content{
+        width: 110%;
+    }
+    .TableStyle{
+        margin: 8%;
+    }
+}
+@media screen and (max-width:600px){
+    .modal-content{
+        width: 450px;
+        position: relative;
+        right:0%;
+    }
+    .TableStyle{
+        margin-left: 25%;
+        margin-right: 25%;
+    }
+}

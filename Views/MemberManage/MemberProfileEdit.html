@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="referrer" content="no-referrer" />
+    <title>修改個人資料</title>
+    <script src="/res/jquery/jquery-3.3.1.min.js" type="text/javascript"></script>
+    <script src="/res/bootstrap/bootstrap.min.js"></script>
+    <script src="/res/js/index.js"></script>
+    <script src="/res/data/memberData.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/js/bootstrap-datepicker.js"></script>
+    <link href="/res/bootstrap/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <link href="//cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="//cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <link href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/css/bootstrap-datepicker.css"
+        rel="stylesheet" />
+    <style>
+
+    </style>
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                type: "POST",
+                headers: { 'Authorization': getCookie("memberToken") },
+                url: webApiUrl + "/mm/getbyid",
+                contentType: "application/json;charset=utf-8",
+                async: false,
+                data: JSON.stringify({
+                    "id": getCookie("memberId")
+                }),
+                success: function (e) {
+                    $('#txtId').val(getCookie("memberId"));
+                    $("#txtLogin").val(e.login);
+                    $.each(languageData, function (key, value) { // generate dropdown list from memberData.js 
+                        if (key == e.language) {
+                            $("#selLanguage").append('<option selected="selected" value=' + key + '>' + value + '</option>')
+                        } else {
+                            $("#selLanguage").append('<option value=' + key + '>' + value + '</option>');
+                        }
+                    });
+                    $("#txtNickname").val(e.nickname);
+                    $("#txtPoint").val(e.point1);
+                    $("#txtType").val(e.type);
+                    $("#txtNation").val(e.nation);
+                }
+            });
+        })
+        function profileEdit(form) {
+            var diagConfirm = confirm("你是否確定要存檔?");
+            if (diagConfirm) {
+                $.ajax({
+                    type: "POST",
+                    headers: { 'Authorization': getCookie("memberToken") },
+                    url: webApiUrl + "/mm/update",
+                    contentType: "application/json;charset=utf-8",
+                    async: false,
+                    data: JSON.stringify({
+                        'id': $('#txtId').val(),
+                        'login': $("#txtLogin").val(),
+                        'nickname': $('#txtNickname').val(),
+                        'language': $("#selLanguage").val(),
+                        'point1': $("#txtPoint").val(),
+                        'type': $("#txtType").val(),
+                        'nation': $("#txtNation").val()
+                    }),
+                    success: function () {
+                        alert("修改完成!");
+                    }
+                });
+            } else {
+                return false;
+            }
+
+        }
+    </script>
+</head>
+
+<body>
+    <form id="profileEdit" onsubmit="return profileEdit(this)">
+        <input type="hidden" class="form-control form-control-sm" id="txtId">
+        <input type="hidden" class="form-control form-control-sm" id="txtPoint">
+        <input type="hidden" class="form-control form-control-sm" id="txtType">
+        <input type="hidden" class="form-control form-control-sm" id="txtNation">
+        <div class="form-group">
+            <label for="txtLogin">登入帳號(電子郵件):</label>
+            <input type="text" class="form-control" id="txtLogin" placeholder="輸入您的電子郵件">
+        </div>
+        <div class="form-group">
+            <label for="selLanguage">預設語言:</label>
+            <select class="form-control" id="selLanguage"></select>
+        </div>
+        <div class="form-group">
+            <label for="txtNickname">顯示名稱:</label>
+            <input type="text" class="form-control" id="txtNickname" placeholder="輸入您的顯示名稱">
+        </div>
+        <button type="submit" class="btn btn-primary">存檔</button>
+    </form>
+</body>
+
+</html>

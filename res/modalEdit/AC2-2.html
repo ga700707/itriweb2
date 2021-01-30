@@ -1,0 +1,218 @@
+<head>
+    <script>
+        $(document).ready(function () {
+            $.each(AnswerChoice, function (key, value) { // generate dropdown list from memberData.js 
+                $("#answerEdit").append('<option value=' + key + '>' + value + '</option>');
+            });
+        });
+        function PicCheck(sender) {
+            var validExts = new Array(".jpg");
+            var fileExt = sender.value;
+            console.log(fileExt);
+            fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+            if (validExts.indexOf(fileExt) < 0) {
+                alert("檔案類型錯誤，可接受的副檔名有：" + validExts.toString());
+                sender.value = null;
+                return false;
+            }
+            else
+                return true;
+        }
+        function MediaCheck(sender) {
+            var validExts = new Array(".mp3");
+
+            var fileExt = sender.value;
+            fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+            if (validExts.indexOf(fileExt) < 0) {
+                alert("檔案類型錯誤，可接受的副檔名有：" + validExts.toString());
+                sender.value = null;
+                return false;
+            }
+            else
+                return true;
+        }
+        $(function () {
+            $("#Edit2-modal-panel").find("img").each(function () {
+                if ($(this)[0].src == window.location.href + '#')
+                    $(this).attr("src", "/res/img/upload_image.png");
+            });
+            $("#UploadpicExampleEdit").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picExampleEdit").attr("src", objUrl);
+                        $("#picExampleEdit").show();
+                    }
+                }
+            });
+
+            $("#UploadvoiceExampleEdit").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+
+                        $("#voiceExampleEdit").attr("src", objUrl);
+                        $("#voiceExampleEdit").show();
+                    }
+                }
+            });
+            $("#UploadpicAEdit").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picAEdit").attr("src", objUrl);
+                        $("#picAEdit").show();
+                    }
+                }
+            });
+            $("#UploadvoiceAEdit").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#voiceAEdit").attr("src", objUrl);
+                        $("#voiceAEdit").show();
+                    }
+                }
+            });
+            $("#UploadpicBEdit").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picBEdit").attr("src", objUrl);
+                        $("#picBEdit").show();
+                    }
+                }
+            });
+            $("#UploadvoiceBEdit").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#voiceBEdit").attr("src", objUrl);
+                        $("#voiceBEdit").show();
+                    }
+                }
+            });
+            $("#UploadpicCEdit").change(function () {
+                if (PicCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#picCEdit").attr("src", objUrl);
+                        $("#picCEdit").show();
+                    }
+                }
+            });
+            $("#UploadvoiceCEdit").change(function () {
+                if (MediaCheck(this)) {
+                    var objUrl = getObjectURL(this.files[0]);
+                    console.log(this.files[0]);
+                    if (this.files.length != 0) {
+                        $("#voiceCEdit").attr("src", objUrl);
+                        $("#voiceCEdit").show();
+                    }
+                }
+            });
+        }); 
+    </script>
+
+</head>
+<style>
+    .btn-image {
+        background-color: #D4D4D4;
+    }
+
+    .btn-voice {
+        background-color: #D4D4D4;
+        line-height: 50px;
+        font-size: 30px;
+        font-family: fantasy;
+        text-align: center;
+        color: white;
+    }
+</style>
+
+
+<!-- Modal: EditExamContent -->
+<div id="modalEditExamContent">
+    <div class="modal-body">
+
+
+
+
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" voiceExampleEdit">題目音檔</label>
+                <audio class="col-sm-5" id="voiceExampleEdit" controls="" style="width:100px;""></audio>
+                    <label class=" col-sm-3 btn-outline-light btn-voice">
+                    <input accept=".mp3" id="UploadvoiceExampleEdit" style="display:none;" type="file">
+                    Upload
+                    </label>
+            </div>
+            <textarea id="voiceExampleMarkEdit" placeholder="題目音檔備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" picAEdit">選項A 圖片</label>
+                <label class="btn-sm btn-outline-light btn-image">
+                    <img class="img-rounded" src="#" id="picAEdit" width="75" height="80" />
+                    <input accept=".jpg" id="UploadpicAEdit" style="display:none;" type="file">
+                </label>
+            </div>
+            <textarea id="picAmarkEdit" placeholder="選項A 圖片備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+
+
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" picBEdit">選項B 圖片</label>
+                <label class="btn-sm btn-outline-light btn-image">
+                    <img class="img-rounded" src="#" id="picBEdit" width="75" height="80" />
+                    <input accept=".jpg" id="UploadpicBEdit" style="display:none;" type="file">
+                </label>
+            </div>
+            <textarea id="picBmarkEdit" placeholder="選項B 圖片備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+
+        <div class="form-group">
+            <div class="row">
+                <label class="col-sm-3" for=" picCEdit">選項C 圖片</label>
+                <label class="btn-sm btn-outline-light btn-image">
+                    <img class="img-rounded" src="#" id="picCEdit" width="75" height="80" />
+                    <input accept=".jpg" id="UploadpicCEdit" style="display:none;" type="file">
+                </label>
+            </div>
+            <textarea id="picCmarkEdit" placeholder="選項C 圖片備註" type="text" rows="2"
+                class="form-control form-control-sm  col-sm-12"></textarea>
+        </div>
+
+
+
+
+        <div class="form-group row">
+            <label class="col-sm-3" for=" answerEdit">正確答案</label>
+            <select type="text" class="form-control form-control-sm col-sm-4" id="answerEdit"></select>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">取消</button>
+    <button id="EditExamContentBtn" type="button" class="btn btn-primary btn-sm"
+        onclick="EditExamContent();">新增考題</button>
+</div>
+</div>
